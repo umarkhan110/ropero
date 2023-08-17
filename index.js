@@ -5,6 +5,10 @@ const { Sequelize } = require('sequelize');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const sequelize = require('./config/database');
 const User = require('./models/User');
+const Category = require('./models/Category');
+const Subcategory = require('./models/Subcategory');
+const NestedSubcategory = require('./models/NestedSubcategory');
+const SubNestedSubcategory = require('./models/SubNestedSubcategory');
 
 const app = express();
 
@@ -27,6 +31,36 @@ app.use(
 
 // Routes
 app.use('/auth', require('./routes/auth'));
+app.use('/cate', require('./routes/categories'));
+app.use('/sizes', require('./routes/sizes'));
+app.use('/posts', require('./routes/post'));
+
+Category.hasMany(Subcategory, {
+  foreignKey: 'categoryId',
+  as: 'Subcategory'
+})
+Subcategory.belongsTo(Category, {
+  foreignKey: 'categoryId',
+  as: 'Category'
+})
+
+Subcategory.hasMany(NestedSubcategory, {
+  foreignKey: 'subcategoryId',
+  as: 'NestedSubcategory'
+})
+NestedSubcategory.belongsTo(Subcategory, {
+  foreignKey: 'subcategoryId',
+  as: 'Subcategory'
+})
+
+NestedSubcategory.hasMany(SubNestedSubcategory, {
+  foreignKey: 'nestedsubcategoryId',
+  as: 'SubNestedSubcategory'
+})
+SubNestedSubcategory.belongsTo(NestedSubcategory, {
+  foreignKey: 'nestedsubcategoryId',
+  as: 'NestedSubcategory'
+})
 
 // Start server
 const PORT = 3000;

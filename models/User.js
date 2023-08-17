@@ -8,6 +8,11 @@ const User = sequelize.define('User', {
     primaryKey: true,
     autoIncrement: true,
   },
+  username: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+  },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -16,6 +21,14 @@ const User = sequelize.define('User', {
   password: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  image: {
+    type: DataTypes.STRING, // Store the image URL
+  },
+  token: DataTypes.STRING,
+  isVerified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   },
   resetToken: {
     type: DataTypes.STRING,
