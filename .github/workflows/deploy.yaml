@@ -30,11 +30,15 @@ jobs:
       - name: Upload to S3
         run: aws s3 cp build.zip s3://${{ secrets.S3_BUCKET_NAME }}/
 
-      # Deploy to Elastic Beanstalk
-      - name: Deploy to AWS Elastic Beanstalk
+      # Create a new Elastic Beanstalk application version
+      - name: Create Elastic Beanstalk Application Version
         run: |
           aws elasticbeanstalk create-application-version \
           --application-name ${{ secrets.EB_APPLICATION_NAME }} \
           --source-bundle S3Bucket="${{ secrets.S3_BUCKET_NAME }}",S3Key="build.zip" \
           --version-label "v${{ github.run_number }}" 
+
+      # Deploy to Elastic Beanstalk environment
+      - name: Deploy to AWS Elastic Beanstalk
+        run: |
           aws elasticbeanstalk update-environment --environment-name ${{ secrets.EB_ENVIRONMENT_NAME }} --version-label "v${{ github.run_number }}"
