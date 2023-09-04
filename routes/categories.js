@@ -4,6 +4,7 @@ const Subcategory = require('../models/Subcategory');
 const NestedSubcategory = require('../models/NestedSubcategory');
 const SubNestedSubcategory = require('../models/SubNestedSubcategory');
 const Brand = require('../models/Brand');
+const requireAuth = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -23,7 +24,6 @@ router.post('/brand', async (req, res) => {
 router.get('/brand', async (req, res) => {
   try {
     const brands = await Brand.findAll();
-    
     res.json(brands);
   } catch (error) {
     console.error(error);

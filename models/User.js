@@ -22,9 +22,9 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  image: {
-    type: DataTypes.STRING, // Store the image URL
-  },
+ // image: {
+  //  type: DataTypes.STRING, // Store the image URL
+//  },
   token: DataTypes.STRING,
   isVerified: {
     type: DataTypes.BOOLEAN,
@@ -32,7 +32,13 @@ const User = sequelize.define('User', {
   },
   resetToken: {
     type: DataTypes.STRING,
-  }
+  },
+  profileImage: {
+    type: DataTypes.STRING,
+  },
+provider :{
+type: DataTypes.STRING,
+}
 });
 
 module.exports = User;

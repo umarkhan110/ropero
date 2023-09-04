@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Size = require('../models/Size');
 const Colors = require('../models/Colors');
+const Material = require('../models/Material');
 
 // Create a new size
 router.post('/size', async (req, res) => {
@@ -52,4 +53,30 @@ router.get('/viewColor', async (req, res) => {
   }
 }
 );
+
+// Create a new Material
+router.post('/addMaterial', async (req, res) => {
+  try {
+    const { name } = req.body;
+    const material = await  Material.create({ name });
+    res.status(201).json(material);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while creating a material.' });
+  }
+});
+
+// View Material
+router.get('/viewMaterial', async (req, res) => {
+  try {
+    const material = await Material.findAll();
+    
+    res.json(material);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+);
+
 module.exports = router;

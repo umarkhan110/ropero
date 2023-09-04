@@ -4,6 +4,7 @@ const session = require('express-session');
 const { Sequelize } = require('sequelize');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const sequelize = require('./config/database');
+const cors = require('cors');
 const User = require('./models/User');
 const Category = require('./models/Category');
 const Subcategory = require('./models/Subcategory');
@@ -12,6 +13,9 @@ const SubNestedSubcategory = require('./models/SubNestedSubcategory');
 
 const app = express();
 
+app.use(cors({
+  origin: ['http://localhost:3000','https://main.d3vrydz5qdkx43.amplifyapp.com','https://www.elropero.app']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -32,7 +36,7 @@ app.use(
 // Routes
 app.use('/auth', require('./routes/auth'));
 app.use('/cate', require('./routes/categories'));
-app.use('/sizes', require('./routes/sizes'));
+app.use('/utils', require('./routes/utils'));
 app.use('/posts', require('./routes/post'));
 
 Category.hasMany(Subcategory, {
