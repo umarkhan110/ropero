@@ -16,17 +16,9 @@ jobs:
         with:
           node-version: "16"
 
-      # Install dependencies
-      - name: Install Dependencies
-        run: npm ci
-
-      # Build the project
-      - name: Build the project
-        run: npm run build
-
       # Zip the build output and package.json
       - name: Zip the build output
-        run: zip -r build.zip dist package.json package-lock.json
+        run: zip -r build.zip .
 
       - name: Configure AWS credentials
         run: |
