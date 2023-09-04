@@ -1,49 +1,48 @@
-name: deploy
+name: Deploy to Elastic Beanstalk
 
 on:
   workflow_dispatch:
-
-env:
-  S3_BUCKET_NAME: ropero
-  AWS_REGION: sa-east-1
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  EB_ENVIRONMENT_NAME: Ropero-env
-  EB_APPLICATION_NAME: ropero
-  DEPLOY_PACKAGE_NAME: node-app-${{github.sha}}.zip
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Zip the repository
-        run: zip -r ${{env.DEPLOY_PACKAGE_NAME}} ./ -x *.git*
-
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: "16"
 
-      - name: Install dependencies
+      # Install dependencies
+      - name: Install Dependencies
         run: npm ci
 
-      - name: Upload Deployment to S3 Bucket
-        run: aws s3 cp ${{env.DEPLOY_PACKAGE_NAME}} s3://${{env.S3_BUCKET_NAME}}/
+      # Build the project
+      - name: Build the project
+        run: npm run build
+
+      # Zip the build output and package.json
+      - name: Zip the build output
+        run: zip -r build.zip dist package.json package-lock.json
 
       - name: Configure AWS credentials
         run: |
-          aws configure set aws_access_key_id ${{ env.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws configure set default.region ${{ env.AWS_REGION }}
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region ${{ secrets.AWS_REGION }}
 
+      # Upload to S3
+      - name: Upload to S3
+        run: aws s3 cp build.zip s3://${{ secrets.S3_BUCKET_NAME }}/
+
+      # Deploy to Elastic Beanstalk
       - name: Deploy to AWS Elastic Beanstalk
         run: |
           aws elasticbeanstalk create-application-version \
-          --application-name ${{ env.EB_APPLICATION_NAME }} \
-          --source-bundle S3Bucket="${{env.S3_BUCKET_NAME}}",S3Key="${{env.DEPLOY_PACKAGE_NAME}}" \
-          --version-label "v${{ github.run_number }}"
-          aws elasticbeanstalk update-environment --environment-name ${{ env.EB_ENVIRONMENT_NAME }} --version-label "v${{ github.run_number }}"
+          --application-name ${{ secrets.EB_APPLICATION_NAME }} \
+          --source-bundle S3Bucket="${{ secrets.S3_BUCKET_NAME }}",S3Key="build.zip" \
+          --version-label "v${{ github.run_number }}" 
+          aws elasticbeanstalk update-environment --environment-name ${{ secrets.EB_ENVIRONMENT_NAME }} --version-label "v${{ github.run_number }}"
