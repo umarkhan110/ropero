@@ -12,7 +12,7 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   EB_ENVIRONMENT_NAME: ropero
   EB_APPLICATION_NAME: ropero
-  DEPLOY_PACKAGE_NAME: node-app-${{github.sha}}.zip
+  DEPLOY_PACKAGE_NAME: node-app-${{github.um}}.zip
 
 jobs:
   deploy:
