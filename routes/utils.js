@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
+import Size from '../models/Size.js';
+import Colors from '../models/Colors.js';
+import Material from '../models/Material.js';
 const router = express.Router();
-const Size = require('../models/Size');
-const Colors = require('../models/Colors');
-const Material = require('../models/Material');
 
 // Create a new size
 router.post('/size', async (req, res) => {
@@ -79,4 +79,4 @@ router.get('/viewMaterial', async (req, res) => {
 }
 );
 
-module.exports = router;
+export default router;

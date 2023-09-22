@@ -1,24 +1,26 @@
-const express = require('express');
+import express from  'express';
 const router = express.Router();
-const Posts = require('../models/Posts');
-const multer = require('multer');
-const uploadImagesToS3 = require('../factory/s3services');
-const Images = require('../models/PostImages');
-const Brand = require('../models/Brand');
-const Category = require('../models/Category');
-const Subcategory = require('../models/Subcategory');
-const NestedSubcategory = require('../models/NestedSubcategory');
-const SubNestedSubcategory = require('../models/SubNestedSubcategory');
-const Size = require('../models/Size');
-const Colors = require('../models/Colors');
-const Material = require('../models/Material');
+import Posts from  '../models/Posts.js';
+import multer from  'multer';
+import uploadImagesToS3 from  '../factory/s3services.js';
+import Images from  '../models/PostImages.js';
+import Brand from  '../models/Brand.js';
+import Category from  '../models/Category.js';
+import Subcategory from  '../models/Subcategory.js';
+import NestedSubcategory from  '../models/NestedSubcategory.js';
+import SubNestedSubcategory from  '../models/SubNestedSubcategory.js';
+import Size from  '../models/Size.js';
+import Colors from  '../models/Colors.js';
+import Material from  '../models/Material.js';
+import { Op } from  'sequelize';
+import User from  '../models/User.js';
 
   // Configure multer for file uploads
   const storage = multer.memoryStorage(); // Store files in memory for further processing
   const upload = multer({ storage });
 
 // Create a new post
-router.post('/post', upload.array('images', 5), async (req, res) => {
+router.post('/post', upload.array('images', 10), async (req, res) => {
   try {
     // Prepare images for uploading to S3
     const images = req.files.map((file, index) => {
@@ -27,13 +29,12 @@ router.post('/post', upload.array('images', 5), async (req, res) => {
         fileName: file.originalname,
       };
     });
-console.log(images)
     // Upload images to S3
     const uploadedImages = await uploadImagesToS3(images);
     
-    const { title,description,price,colorId, sizeId, materialId, parcel_size, brandId, condition, delivery_type, shipping, type, lat,lng, city,street, floor, categoryId, subcategoryId, nestedsubcategoryId, subnestedsubcategoryId } = req.body;
+    const {userId, title,description,price,colorId, sizeId, materialId, parcel_size, brandId, condition, delivery_type, shipping, type, lat,lng, city,street, floor,state, categoryId, subcategoryId, nestedsubcategoryId, subnestedsubcategoryId } = req.body;
      // Check for missing required fields
-     if (!title || !price || !categoryId || !city || !street || !lat || !lng || !brandId) {
+     if (!userId || !title || !price || !categoryId || !city || !street || !lat || !lng || !brandId || !state) {
       return res.status(400).json({ error: 'All fields must be filled.' });
     }
 
@@ -47,7 +48,7 @@ console.log(images)
 
      const materialIds = materialId ? materialId.split(',').map(Number) : [];
 
-    const post = await  Posts.create({ title,description,price,colorId:colorIds, sizeId, materialId:materialIds, parcel_size, brandId, condition, delivery_type, shipping, type, lat,lng, city,street, floor,categoryId, subcategoryId, nestedsubcategoryId, subnestedsubcategoryId });
+    const post = await  Posts.create({ userId,title,description,price,colorId:colorIds, sizeId, materialId:materialIds, parcel_size, brandId, condition, delivery_type, shipping, type, lat,lng, city,street, floor,state,categoryId, subcategoryId, nestedsubcategoryId, subnestedsubcategoryId });
    
         // Associate colors with the post
         await post.setColors(colorIds);
@@ -71,7 +72,14 @@ console.log(images)
 // Get post
 router.get('/post', async (req, res) => {
   try {
+    const { type } = req.query;
+    const filters = {};
+
+    if (type) {
+      filters.type = type;
+    }
     const posts = await Posts.findAll({
+      where: filters,
       include: [{ model: Images, as: 'images' },
       { model: Brand, as: 'brand' },
       { model: Size, as: 'size', attributes: ['name']},
@@ -143,6 +151,7 @@ router.get('/viewpost/:id', async (req, res) => {
       { model: Subcategory, as: 'subcategory' },
       { model: NestedSubcategory, as: 'nestedsubcategory' },
       { model: SubNestedSubcategory, as: 'subnestedsubcategory' },
+      { model: User, as: 'user' },
     ], 
    
     });
@@ -150,7 +159,8 @@ router.get('/viewpost/:id', async (req, res) => {
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
     }
-
+    post.views += 1;
+    await post.save();
           const postJson = post.toJSON();
           postJson.images = postJson.images.map(image => {
             return {
@@ -265,4 +275,278 @@ router.delete('/deletepost/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+// Filter posts
+router.get('/postsfilter', async (req, res) => {
+  try {
+    const {
+      type,
+      categoryId,
+      subcategoryId,
+      nestedsubcategoryId,
+      subnestedsubcategoryId,
+      brandId,
+      colorId,
+      materialId,
+      sizeId,
+      state,
+      price,
+      condition
+    } = req.query;
+    const filters = {};
+
+    if (type) {
+      filters.type = type;
+    }
+
+    if (categoryId) {
+      filters.categoryId = categoryId;
+    }
+
+    if (subcategoryId) {
+      filters.subcategoryId = subcategoryId;
+    }
+
+    if (nestedsubcategoryId) {
+      filters.nestedsubcategoryId = nestedsubcategoryId;
+    }
+
+    if (subnestedsubcategoryId) {
+      filters.subnestedsubcategoryId = subnestedsubcategoryId;
+    }
+
+    if (brandId) {
+      filters.brandId = brandId;
+    }
+
+    if (sizeId) {
+      filters.sizeId = sizeId;
+    }
+    
+    if (state) {
+      filters.state = state;
+    }
+
+    if (price) {
+      filters.price = price;
+    }
+
+    if (condition) {
+      filters.condition = condition;
+    }
+
+    const includeArray = [
+      { model: Images, as: 'images' },
+      { model: Brand, as: 'brand' },
+      { model: Size, as: 'size', attributes: ['name'] },
+      { model: Colors, as: 'colors', attributes: ['id', 'name'] },
+      { model: Material, as: 'material', attributes: ['id', 'name'] },
+      { model: Category, as: 'category' },
+      { model: Subcategory, as: 'subcategory' },
+      { model: NestedSubcategory, as: 'nestedsubcategory' },
+      { model: SubNestedSubcategory, as: 'subnestedsubcategory' },
+    ];
+
+    // Conditionally include the 'colors' association if 'colorId' is provided
+    if (colorId) {
+      includeArray.push({
+        model: Colors,
+        as: 'colors',
+        where: { id: { [Op.in]: colorId.split(',') } },
+      });
+    }
+    if (materialId) {
+      includeArray.push({
+        model: Material, 
+        as: 'material',
+        where: { id: { [Op.in]: materialId.split(',') } },
+      });
+    }
+
+    const filteredPosts = await Posts.findAll({
+      where: filters,
+      include: includeArray,
+    });
+
+    if (filteredPosts.length === 0) {
+      return res.status(404).json({ message: 'No posts match the selected filters.' });
+    }
+
+    const postsWithS3Urls = filteredPosts.map((post) => {
+      const postJson = post.toJSON();
+      postJson.images = postJson.images.map((image) => ({
+        ...image,
+        imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+      }));
+      const colors = postJson.colors.map((color) => ({
+        id: color.id,
+        name: color.name,
+      }));
+      const materials = postJson.material.map((material) => ({
+        id: material.id,
+        name: material.name,
+      }));
+      return {
+        ...postJson,
+        brandName: postJson.brand.name,
+        categoryName: postJson.category.name,
+        subcategoryName: postJson.subcategory.name,
+        nestedsubcategoryName: postJson.nestedsubcategory.name,
+        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
+        brand: undefined,
+        colors: colors,
+        material: materials,
+        category: undefined,
+        subcategory: undefined,
+        nestedsubcategory: undefined,
+        subnestedsubcategory: undefined,
+      };
+    });
+
+    res.json(postsWithS3Urls);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Route to get the 5 posts with the highest views
+router.get('/popular-posts', async (req, res) => {
+  try {
+    const { type } = req.query;
+    const filters = {};
+
+    if (type) {
+      filters.type = type;
+    }
+    const highestViewsPosts = await Posts.findAll({
+      where: filters,
+      limit: 5, // Limit the result to 5 posts
+      order: [['views', 'DESC']], // Order by views in descending order
+      include: [{ model: Images, as: 'images' },
+      { model: Brand, as: 'brand' },
+      { model: Size, as: 'size', attributes: ['name']},
+      { model: Colors, as: 'colors', attributes: ['id', 'name']  },
+      { model: Material, as: 'material', attributes: ['id', 'name']  },
+      { model: Category, as: 'category' },
+      { model: Subcategory, as: 'subcategory' },
+      { model: NestedSubcategory, as: 'nestedsubcategory' },
+      { model: SubNestedSubcategory, as: 'subnestedsubcategory' },
+    ],
+    });
+
+    if (highestViewsPosts.length < 1) {
+      return res.status(404).json({ error: 'No posts found' });
+    }
+
+    const postsWithS3Urls = highestViewsPosts.map(post => {
+      const postJson = post.toJSON();
+      postJson.images = postJson.images.map(image => {
+        return {
+          ...image,
+          imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+        };
+      });
+      const colors = postJson.colors.map(color => ({
+        id: color.id,
+        name: color.name,
+      }));
+      const materials = postJson.material.map(material => ({
+        id: material.id,
+        name: material.name,
+      }));
+      return {
+        ...postJson,
+        brandName: postJson.brand.name,
+        categoryName: postJson.category.name,
+        subcategoryName: postJson.subcategory.name,
+        nestedsubcategoryName: postJson.nestedsubcategory.name,
+        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
+        brand: undefined, // Add brand name to the response
+        colors: colors,
+        material: materials,
+        category: undefined,
+        subcategory: undefined,
+        nestedsubcategory: undefined,
+        subnestedsubcategory: undefined,
+      };
+      // return postJson;
+    });
+
+    res.json(postsWithS3Urls);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get the 10 newest posts
+router.get('/newest-posts', async (req, res) => {
+  try {
+    const { type } = req.query;
+    const filters = {};
+
+    if (type) {
+      filters.type = type;
+    }
+    const newestPosts = await Posts.findAll({
+      where: filters,
+      limit: 10, // Limit the result to 10 posts
+      order: [['createdAt', 'DESC']], // Order by creation date in descending order
+      include: [{ model: Images, as: 'images' },
+      { model: Brand, as: 'brand' },
+      { model: Size, as: 'size', attributes: ['name']},
+      { model: Colors, as: 'colors', attributes: ['id', 'name']  },
+      { model: Material, as: 'material', attributes: ['id', 'name']  },
+      { model: Category, as: 'category' },
+      { model: Subcategory, as: 'subcategory' },
+      { model: NestedSubcategory, as: 'nestedsubcategory' },
+      { model: SubNestedSubcategory, as: 'subnestedsubcategory' },
+    ],
+    });
+
+    if (newestPosts.length < 1) {
+      return res.status(404).json({ error: 'No posts found' });
+    }
+
+    const postsWithS3Urls = newestPosts.map(post => {
+      const postJson = post.toJSON();
+      postJson.images = postJson.images.map(image => {
+        return {
+          ...image,
+          imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+        };
+      });
+      const colors = postJson.colors.map(color => ({
+        id: color.id,
+        name: color.name,
+      }));
+      const materials = postJson.material.map(material => ({
+        id: material.id,
+        name: material.name,
+      }));
+      return {
+        ...postJson,
+        brandName: postJson.brand.name,
+        categoryName: postJson.category.name,
+        subcategoryName: postJson.subcategory.name,
+        nestedsubcategoryName: postJson.nestedsubcategory.name,
+        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
+        brand: undefined, // Add brand name to the response
+        colors: colors,
+        material: materials,
+        category: undefined,
+        subcategory: undefined,
+        nestedsubcategory: undefined,
+        subnestedsubcategory: undefined,
+      };
+      // return postJson;
+    });
+
+    res.json(postsWithS3Urls);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while fetching the newest posts.' });
+  }
+});
+
+export default router;

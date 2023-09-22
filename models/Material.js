@@ -1,5 +1,5 @@
-const { DataTypes, Sequelize } = require('sequelize');
-const sequelize = require('../config/database'); // Initialize Sequelize connection
+import { DataTypes, Sequelize } from 'sequelize';
+import sequelize from '../config/database.js'; // Initialize Sequelize connection
 
 const Material = sequelize.define('Material', {
   name: {
@@ -8,4 +8,4 @@ const Material = sequelize.define('Material', {
   }
 });
 
-module.exports = Material;
+export default Material;

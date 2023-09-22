@@ -1,9 +1,10 @@
-const AWS = require('aws-sdk');
+import AWS from 'aws-sdk';
+import "dotenv/config";
 
 AWS.config.update({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION,
+    accessKeyId:process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey:process.env.AWS_SECRET_ACCESS_KEY,
+    region:process.env.AWS_REGION,
   });
   
   const s3 = new AWS.S3()
@@ -14,7 +15,6 @@ AWS.config.update({
   
     for (const image of images) {
       const { imageData, fileName } = image;
-console.log(image)
       const params = {
         Bucket: 'ropero',
         Key: fileName,
@@ -35,4 +35,4 @@ console.log(image)
     return uploadedImages;
   };
 
-  module.exports= uploadImagesToS3
+  export default uploadImagesToS3

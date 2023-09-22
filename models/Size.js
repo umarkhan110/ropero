@@ -1,5 +1,5 @@
-const { DataTypes, Sequelize } = require('sequelize');
-const sequelize = require('../config/database'); // Initialize Sequelize connection
+import { DataTypes, Sequelize } from 'sequelize';
+import sequelize from '../config/database.js'; // Initialize Sequelize connection
 
 const Size = sequelize.define('Size', {
   name: {
@@ -8,4 +8,4 @@ const Size = sequelize.define('Size', {
   }
 });
 
-module.exports = Size;
+export default Size;

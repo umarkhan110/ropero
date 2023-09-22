@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
+import Size from '../models/Size.js';
+import Colors from '../models/Colors.js';
 const router = express.Router();
-const Size = require('../models/Size');
-const Colors = require('../models/Colors');
 
 // Create a new size
 router.post('/size', async (req, res) => {
@@ -52,4 +52,4 @@ router.get('/viewColor', async (req, res) => {
   }
 }
 );
-module.exports = router;
+export default router;

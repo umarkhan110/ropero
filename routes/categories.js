@@ -1,10 +1,9 @@
-const express = require('express');
-const Category = require('../models/Category');
-const Subcategory = require('../models/Subcategory');
-const NestedSubcategory = require('../models/NestedSubcategory');
-const SubNestedSubcategory = require('../models/SubNestedSubcategory');
-const Brand = require('../models/Brand');
-const requireAuth = require('../middleware/authMiddleware');
+import express from 'express';
+import Category from '../models/Category.js';
+import Subcategory from '../models/Subcategory.js';
+import NestedSubcategory from '../models/NestedSubcategory.js';
+import SubNestedSubcategory from '../models/SubNestedSubcategory.js';
+import Brand from '../models/Brand.js';
 
 const router = express.Router();
 
@@ -229,4 +228,4 @@ router.get('/subnestedsubcategory', async (req, res) => {
 //   }
 // });
 
-module.exports = router;
+export default router;

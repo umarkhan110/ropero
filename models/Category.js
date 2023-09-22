@@ -1,6 +1,6 @@
 // models/Category.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+import { DataTypes, Sequelize } from 'sequelize';
+import sequelize from '../config/database.js'; // Initialize Sequelize connection
 
 const Category = sequelize.define('Category', {
   name: {
@@ -22,4 +22,4 @@ const Category = sequelize.define('Category', {
 //   }
 // });
 
-module.exports = Category;
+export default Category;

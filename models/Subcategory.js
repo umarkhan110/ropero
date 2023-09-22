@@ -1,6 +1,6 @@
 // models/Subcategories.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js'; // Initialize Sequelize connection
 // const Category = require('./Category');
 
 const Subcategory = sequelize.define('Subcategory', {
@@ -18,5 +18,5 @@ const Subcategory = sequelize.define('Subcategory', {
 // Subcategory.belongsTo(Subcategory, { as: 'nestedParentSubcategory', foreignKey: 'nestedParentSubcategoryId' });
 // Subcategory.hasMany(Subcategory, { as: 'nestedSubcategories', foreignKey: 'nestedParentSubcategoryId' });
 
-module.exports = Subcategory;
+export default Subcategory;
 

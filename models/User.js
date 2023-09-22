@@ -1,6 +1,6 @@
 // models/User.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js'; // Initialize Sequelize connection
 
 const User = sequelize.define('User', {
   id: {
@@ -41,4 +41,4 @@ type: DataTypes.STRING,
 }
 });
 
-module.exports = User;
+export default User;
