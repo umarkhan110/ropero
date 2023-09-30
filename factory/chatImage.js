@@ -9,7 +9,7 @@ AWS.config.update({
   
   const s3 = new AWS.S3;
 
-  const profileImageToS3 = async (imageData, fileName) => {
+  const chatImageToS3 = async (imageData, fileName) => {
     const params = {
       Bucket: "ropero",
       Key: fileName,
@@ -21,12 +21,14 @@ AWS.config.update({
     try {
       const response = await s3.putObject(params).promise();
       // Construct the S3 image URL using the bucket name and file name
-    const s3ImageUrl = `https://ropero.s3.sa-east-1.amazonaws.com/${fileName}`;
+      if(response){
+          const s3ImageUrl = `https://ropero.s3.sa-east-1.amazonaws.com/${fileName}`;
+          return s3ImageUrl;
+      }
     
-    return s3ImageUrl;
     } catch (error) {
       console.error("Error uploading image:", error);
       throw error;
     }
   };
-  export default profileImageToS3
+  export default chatImageToS3

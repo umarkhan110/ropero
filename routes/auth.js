@@ -9,6 +9,7 @@ import sgMail from "@sendgrid/mail";
 import profileImageToS3 from "../factory/profileUpload.js";
 import axios from "axios";
 import "dotenv/config";
+import jwt from "jsonwebtoken"
 sgMail.setApiKey(process.env.SG_MAIL);
 
 // Configure multer for file uploads
@@ -62,12 +63,12 @@ router.post("/socialLogin", async (req, res) => {
       (user && user.provider === "facebook")
     ) {
       // means we already have a user with this email and this email was registered through social
-      // const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
-      //   expiresIn: TOKEN_EXPIRY_DAYS,
-      // });
+      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+        expiresIn: process.env.TOKEN_EXPIRY_DAYS,
+      });
       user.fcm_token = fcm_token;
       await user.save();
-      const data = { user: user };
+      const data = { token:token, user: user };
 
       return res.status(200).json({ data, message: "User login successfully" });
     } else {
@@ -81,10 +82,10 @@ router.post("/socialLogin", async (req, res) => {
           isVerified: true,
             
         });
-        // const token = jwt.sign({ userId: userData.id }, JWT_SECRET, {
-        //   expiresIn: TOKEN_EXPIRY_DAYS,
-        // });
-        const data = { user: userData };
+        const token = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, {
+          expiresIn: process.env.TOKEN_EXPIRY_DAYS,
+        });
+        const data = { token:token, user: userData };
         return res
           .status(200)
           .json({ data, message: "User login successfully" });
@@ -230,14 +231,17 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials." });
     }
 
+    if (passwordMatch) {
+      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+        expiresIn: process.env.TOKEN_EXPIRY_DAYS,
+      });
+
     user.fcm_token = fcm_token;
     await user.save();
 
-    // Set user session
-    // req.session.user = user;
-
     res.json({
       message: "Login successful.",
+      token: token,
       user: {
         id: user.id,
         username: user.username,
@@ -245,6 +249,7 @@ router.post("/login", async (req, res) => {
         fcm_token: fcm_token
       },
     });
+  }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "An error occurred while logging in." });

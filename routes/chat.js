@@ -4,6 +4,12 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, addDoc, getDocs, query, orderBy, getDoc, setDoc, where, updateDoc } from 'firebase/firestore';
 import firebaseConfig from '../config/firebaseConfig.js'; // Adjust the path to your firebaseConfig.js
 import User from '../models/User.js';
+import chatImageToS3 from '../factory/chatImage.js';
+import multer from 'multer';
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage(); // Store files in memory for further processing
+const upload = multer({ storage });
 
 // Initialize Firebase with your configuration
 const firebaseApp = initializeApp(firebaseConfig);
@@ -30,11 +36,11 @@ router.post('/sendMessage', async (req, res) => {
       participants: [senderId, receiverId],
       senderName: sender ? sender.username : '',
       senderImage: sender
-        ? `https://ropero.s3.sa-east-1.amazonaws.com/${sender.profileImage}`
+        ? sender.profileImage
         : '',
       receiverName: receiver ? receiver.username : '',
       receiverImage: receiver
-        ? `https://ropero.s3.sa-east-1.amazonaws.com/${receiver.profileImage}`
+        ? receiver.profileImage
         : '',
       last_message: {
         text: messageText,
@@ -126,6 +132,27 @@ router.get('/getChatRooms/:senderId', async (req, res) => {
   } catch (error) {
     console.error('Error fetching chat rooms:', error);
     res.status(500).send('Error fetching chat rooms');
+  }
+});
+
+// Upload Chat Image
+router.post('/upload-image', upload.single("chatImage"), async (req, res) => {
+
+  try {
+    // Upload profile image to S3
+    let chatImage = null;
+    if (req.file) {
+      const uploadResponse = await chatImageToS3(
+        req.file.buffer,
+        req.file.originalname
+      );
+      chatImage = uploadResponse;
+    }
+    res
+      .status(201)
+      .json({ chatImage: chatImage});
+  } catch (error) {
+    res.status(500).send('Error uploading image');
   }
 });
 

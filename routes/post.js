@@ -14,13 +14,13 @@ import Colors from  '../models/Colors.js';
 import Material from  '../models/Material.js';
 import { Op } from  'sequelize';
 import User from  '../models/User.js';
-
+import checkUserAuthentication from '../middleware/authMiddleware.js';
   // Configure multer for file uploads
   const storage = multer.memoryStorage(); // Store files in memory for further processing
   const upload = multer({ storage });
 
 // Create a new post
-router.post('/post', upload.array('images', 10), async (req, res) => {
+router.post('/post', checkUserAuthentication,  upload.array('images', 10), async (req, res) => {
   try {
     // Prepare images for uploading to S3
     const images = req.files.map((file, index) => {

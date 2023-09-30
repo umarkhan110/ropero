@@ -29,6 +29,25 @@ router.get('/size', async (req, res) => {
 }
 );
 
+// Update Size by Id
+router.put('/update-size/:id', async (req, res) => {
+  try {
+    const sizeId = req.params.id;
+    const { name } = req.body;
+    const size = await Size.findByPk(sizeId);
+
+    if (!size) {
+      return res.status(404).json({ message: 'Brand not found' });
+    }
+    size.name = name;
+    await size.save();
+    return res.json({ message: 'Size updated successfully' });
+  } catch (error) {
+
+    res.status(500).json({ error: error });
+  }
+});
+
 // Create a new color
 router.post('/addColor', async (req, res) => {
   try {
@@ -54,6 +73,25 @@ router.get('/viewColor', async (req, res) => {
 }
 );
 
+// Update Color by Id
+router.put('/update-color/:id', async (req, res) => {
+  try {
+    const colorId = req.params.id;
+    const { name } = req.body;
+    const color = await Colors.findByPk(colorId);
+
+    if (!color) {
+      return res.status(404).json({ message: 'Color not found' });
+    }
+    color.name = name;
+    await color.save();
+    return res.json({ message: 'Color updated successfully' });
+  } catch (error) {
+
+    res.status(500).json({ error: error });
+  }
+});
+
 // Create a new Material
 router.post('/addMaterial', async (req, res) => {
   try {
@@ -78,5 +116,24 @@ router.get('/viewMaterial', async (req, res) => {
   }
 }
 );
+
+// Update Material by Id
+router.put('/update-material/:id', async (req, res) => {
+  try {
+    const materialId = req.params.id;
+    const { name } = req.body;
+    const material = await Material.findByPk(materialId);
+
+    if (!material) {
+      return res.status(404).json({ message: 'Brand not found' });
+    }
+    material.name = name;
+    await material.save();
+    return res.json({ message: 'Material updated successfully' });
+  } catch (error) {
+
+    res.status(500).json({ error: error });
+  }
+});
 
 export default router;

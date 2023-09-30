@@ -44,8 +44,6 @@ router.put('/update-brand/:id', async (req, res) => {
     brand.name = name;
     await brand.save();
     return res.json({ message: 'Brand updated successfully' });
-
-    res.status(201).json(brand);
   } catch (error) {
 
     res.status(500).json({ error: error });
