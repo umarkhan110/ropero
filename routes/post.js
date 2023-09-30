@@ -78,6 +78,7 @@ router.get('/post', async (req, res) => {
     if (type) {
       filters.type = type;
     }
+    filters.is_Approved = true;
     const posts = await Posts.findAll({
       where: filters,
       include: [{ model: Images, as: 'images' },
@@ -132,6 +133,88 @@ router.get('/post', async (req, res) => {
     
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+);
+
+// Get post by admin
+router.get('/get-all-post-by-admin', async (req, res) => {
+  try {
+    let { page = 1, pageSize = 10, search } = req.query;
+
+    // Ensure that pageSize is a numeric value
+    pageSize = parseInt(pageSize, 10);
+     
+     const offset = (page - 1) * pageSize;
+     const whereClause = {
+      // Add search functionality
+      [Op.or]: [
+        // Customize this list to include relevant fields you want to search in
+        { title: { [Op.like]: `%${search}%` } },
+        // Add more fields as needed
+      ],
+    };
+    const posts = await Posts.findAndCountAll({
+      where: whereClause,
+      include: [{ model: Images, as: 'images' },
+      { model: Brand, as: 'brand' },
+      { model: Size, as: 'size', attributes: ['name']},
+      { model: Colors, as: 'colors', attributes: ['id', 'name']  },
+      { model: Material, as: 'material', attributes: ['id', 'name']  },
+      { model: Category, as: 'category' },
+      { model: Subcategory, as: 'subcategory' },
+      { model: NestedSubcategory, as: 'nestedsubcategory' },
+      { model: SubNestedSubcategory, as: 'subnestedsubcategory' },
+    ], 
+    offset,
+      limit: pageSize,
+    });
+    
+        // Map the posts to add S3 URLs to each image
+        const postsWithS3Urls = posts.rows.map(post => {
+          const postJson = post.toJSON();
+          postJson.images = postJson.images.map(image => {
+            return {
+              ...image,
+              imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+            };
+          });
+          const colors = postJson.colors.map(color => ({
+            id: color.id,
+            name: color.name,
+          }));
+          const materials = postJson.material.map(material => ({
+            id: material.id,
+            name: material.name,
+          }));
+          return {
+            ...postJson,
+            brandName: postJson.brand.name,
+            categoryName: postJson.category.name,
+            subcategoryName: postJson.subcategory.name,
+            nestedsubcategoryName: postJson.nestedsubcategory.name,
+            subnestedsubcategoryName: postJson.subnestedsubcategory.name,
+            brand: undefined, // Add brand name to the response
+            colors: colors,
+            material: materials,
+            category: undefined,
+            subcategory: undefined,
+            nestedsubcategory: undefined,
+            subnestedsubcategory: undefined,
+          };
+          // return postJson;
+        });
+    
+        res.json({
+          total: posts.count,
+      page,
+      pageSize,
+          postsWithS3Urls
+        });
+    
+  } catch (error) {
+    console.log(error)
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
@@ -333,7 +416,7 @@ router.get('/postsfilter', async (req, res) => {
     if (condition) {
       filters.condition = condition;
     }
-
+    filters.is_Approved = true;
     const includeArray = [
       { model: Images, as: 'images' },
       { model: Brand, as: 'brand' },
@@ -404,7 +487,7 @@ router.get('/postsfilter', async (req, res) => {
 
     res.json(postsWithS3Urls);
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -418,6 +501,7 @@ router.get('/popular-posts', async (req, res) => {
     if (type) {
       filters.type = type;
     }
+    filters.is_Approved = true;
     const highestViewsPosts = await Posts.findAll({
       where: filters,
       limit: 5, // Limit the result to 5 posts
@@ -488,6 +572,7 @@ router.get('/newest-posts', async (req, res) => {
     if (type) {
       filters.type = type;
     }
+    filters.is_Approved = true;
     const newestPosts = await Posts.findAll({
       where: filters,
       limit: 10, // Limit the result to 10 posts
@@ -546,6 +631,32 @@ router.get('/newest-posts', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'An error occurred while fetching the newest posts.' });
+  }
+});
+
+// Route to Approve or DisApprove a post by ID
+router.put('/aprrove-disapprove/:id', async (req, res) => {
+  const postId = req.params.id;
+
+  try {
+    const post = await Posts.findByPk(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if(post.is_Approved === false){
+      post.is_Approved = true;
+      await post.save();
+      res.json({ message: 'Post approved successfully' });
+    }else{
+      post.is_Approved = false;
+      await post.save();
+      res.json({ message: 'Post disapproved successfully' });
+    }
+
+  } catch (error) {
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 

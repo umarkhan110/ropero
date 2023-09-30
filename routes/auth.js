@@ -334,10 +334,22 @@ router.post("/reset-password", async (req, res) => {
 // Define a route to get all users
 router.get('/get-all-user', async (req, res) => {
   try {
+    let { page = 1, pageSize = 10 } = req.query;
+    // Ensure that pageSize is a numeric value
+    pageSize = parseInt(pageSize, 10);
+    const offset = (page - 1) * pageSize;
+
     const users = await User.findAll({
-      attributes: ['id', 'username', 'email', 'profileImage', 'isVerified', 'is_disabled']
+      attributes: ['id', 'username', 'email', 'profileImage', 'isVerified', 'is_disabled'],
+      offset,
+      limit: pageSize,
     });
-    res.json(users);
+    res.json({
+      total: users.count,
+      page,
+      pageSize,
+      users
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
@@ -427,5 +439,35 @@ router.delete("/deleteuser/:id", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+// Admin Login
+router.post("/admin-login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const adminEmail = "admin@ropero.app";
+    const adminPassword = "admin@ropero"; // You should hash and store the password securely
+
+    // Check if the provided email and password match the admin credentials
+    if (email === adminEmail && password === adminPassword) {
+      // Replace the above line with proper password hashing and checking
+
+      const id = "admin@ropero";
+      const token = jwt.sign({ userId: id }, process.env.JWT_SECRET, {
+        expiresIn: process.env.TOKEN_EXPIRY_DAYS,
+      });
+
+      res.json({
+        message: "Login successful.",
+        token: token,
+      });
+    } else {
+      return res.status(401).json({ error: "Invalid credentials." });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "An error occurred while logging in." });
+  }
+});
+
 
 export default router;

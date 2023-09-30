@@ -123,7 +123,11 @@
       type: DataTypes.INTEGER,
       defaultValue: 0, // Set the default value to 0
     },
-  
+    is_Approved: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    }
   });
 
   // Create an association with the Images table
