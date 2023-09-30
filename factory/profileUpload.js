@@ -20,8 +20,12 @@ AWS.config.update({
   
     try {
       const response = await s3.putObject(params).promise();
-      console.log("Image uploaded successfully:", response);
-      return response;
+      // Construct the S3 image URL using the bucket name and file name
+    const s3ImageUrl = `https://ropero.s3.sa-east-1.amazonaws.com/${fileName}`;
+    
+    return s3ImageUrl; // Return the S3 image URL
+
+      return s3ImageUrl;
     } catch (error) {
       console.error("Error uploading image:", error);
       throw error;

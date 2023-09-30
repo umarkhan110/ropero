@@ -18,7 +18,7 @@ const app = express();
 initializeApp(firebaseConfig);
 
 app.use(cors({
-  origin: ['http://localhost:3000','https://main.d3vrydz5qdkx43.amplifyapp.com','https://www.elropero.app']
+  origin: ['https://main.d3jf36qtaaf0i6.amplifyapp.com','https://elropero.vercel.app','http://localhost:3000','https://main.d3vrydz5qdkx43.amplifyapp.com','https://www.elropero.app']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -46,6 +46,7 @@ import wishlistRoutes from './routes/whislist.js';
 import followerRoutes from './routes/follower.js';
 import ratingRoutes from './routes/rating.js';
 import chatRoutes from './routes/chat.js';
+import notificationRoutes from './routes/pushNotification.js'
 
 app.use('/auth', authRoutes);
 app.use('/cate', categoriesRoutes);
@@ -55,6 +56,7 @@ app.use('/whislist', wishlistRoutes);
 app.use('/follower', followerRoutes);
 app.use('/rating', ratingRoutes);
 app.use('/chat', chatRoutes);
+app.use('/notification', notificationRoutes)
 
 Category.hasMany(Subcategory, {
   foreignKey: 'categoryId',

@@ -1,8 +1,8 @@
 // models/User.js
-import { DataTypes } from 'sequelize';
-import sequelize from '../config/database.js'; // Initialize Sequelize connection
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database.js"; // Initialize Sequelize connection
 
-const User = sequelize.define('User', {
+const User = sequelize.define("User", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -22,9 +22,6 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
   },
- // image: {
-  //  type: DataTypes.STRING, // Store the image URL
-//  },
   token: DataTypes.STRING,
   isVerified: {
     type: DataTypes.BOOLEAN,
@@ -36,9 +33,17 @@ const User = sequelize.define('User', {
   profileImage: {
     type: DataTypes.STRING,
   },
-provider :{
-type: DataTypes.STRING,
-}
+  provider: {
+    type: DataTypes.STRING,
+  },
+  fcm_token: {
+    type: DataTypes.STRING,
+  },
+  is_disabled: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
 });
 
 export default User;
