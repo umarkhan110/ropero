@@ -8,6 +8,11 @@ const Subcategory = sequelize.define('Subcategory', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  isCategorized: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  }
 });
 
 // Subcategory.belongsTo(Category, { as: 'category', foreignKey: 'categoryId' });

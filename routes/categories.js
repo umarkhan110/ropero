@@ -4,8 +4,14 @@ import Subcategory from '../models/Subcategory.js';
 import NestedSubcategory from '../models/NestedSubcategory.js';
 import SubNestedSubcategory from '../models/SubNestedSubcategory.js';
 import Brand from '../models/Brand.js';
+import multer from "multer";
+import profileImageToS3 from '../factory/profileUpload.js';
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage(); // Store files in memory for further processing
+const upload = multer({ storage });
 
 // Create a new brand
 router.post('/brand', async (req, res) => {
@@ -70,13 +76,33 @@ router.delete("/delete-brand/:id", async (req, res) => {
 });
 
 // Create a new category
-router.post('/categories', async (req, res) => {
+router.post('/categories', upload.single("categoryIcon"), async (req, res) => {
   try {
     const { name } = req.body;
-    const category = await Category.create({ name });
+
+     // Check if the category name already exists
+     const existingCategory = await Category.findOne({
+      where: {
+        name: name
+      },
+    });
+    if (existingCategory) {
+      return res
+        .status(400)
+        .json({ error: "Category name is already in use." });
+    }
+     // Upload profile image to S3
+     let categoryIcon = null;
+     if (req.file) {
+       const uploadResponse = await profileImageToS3(
+         req.file.buffer,
+         req.file.originalname
+       );
+       categoryIcon = uploadResponse; // Store the S3 URL in the database
+     }
+    const category = await Category.create({ name, categoryIcon:categoryIcon });
     res.status(201).json(category);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: 'An error occurred while creating a category.' });
   }
 });
@@ -149,6 +175,7 @@ router.get('/allcategories', async (req, res) => {
 // Get category
 router.get('/category', async (req, res) => {
   try {
+    
     const categories = await Category.findAll();
     
     res.json(categories);
@@ -199,17 +226,37 @@ router.get('/subnestedsubcategory', async (req, res) => {
 );
 
 // Update a category, subcategory, nested subcategory, or sub-nested subcategory
-router.put('/update-categories/:id', async (req, res) => {
+router.put('/update-categories/:id', upload.single("categoryIcon"),  async (req, res) => {
   const { type, name } = req.body;
   const id = req.params.id;
   try {
     switch (type) {
       case 'category':
+             // Check if the category name already exists
+     const existingCategory = await Category.findOne({
+      where: {
+        name: name
+      },
+    });
+    if (existingCategory) {
+      return res
+        .status(400)
+        .json({ error: "Category name is already in use." });
+    }
+        let categoryIcon = null;
+     if (req.file) {
+       const uploadResponse = await profileImageToS3(
+         req.file.buffer,
+         req.file.originalname
+       );
+       categoryIcon = uploadResponse; // Store the S3 URL in the database
+     }
         const category = await Category.findByPk(id);
         if (!category) {
           return res.status(404).json({ message: 'Category not found' });
         }
-        category.name = name;
+        category.name = name ? name : category.name;
+        category.categoryIcon = categoryIcon ? categoryIcon : category.categoryIcon 
         await category.save();
         return res.json({ message: 'Category updated successfully' });
         break;
@@ -237,6 +284,58 @@ router.put('/update-categories/:id', async (req, res) => {
           return res.status(404).json({ message: 'Subnestedsubcategory not found' });
         }
         subnestedsubcategory.name = name;
+        await subnestedsubcategory.save();
+        return res.json({ message: 'Subnestedsubcategory updated successfully' });
+        break;
+      default:
+        res.status(400).json({ error: 'Invalid type specified in the request.' });
+        break;
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while updating the categories.' });
+  }
+});
+
+// Update a category, subcategory, nested subcategory, or sub-nested subcategory
+router.put('/isCategorized/:id',  async (req, res) => {
+  const { type } = req.body;
+  const id = req.params.id;
+  try {
+    switch (type) {
+      case 'category':
+        const category = await Category.findByPk(id);
+        if (!category) {
+          return res.status(404).json({ message: 'Category not found' });
+        }
+        category.isCategorized = !category.isCategorized
+        await category.save();
+        return res.json({ message: 'Category updated successfully' });
+        break;
+      case 'subcategory':
+        const subCategory = await Subcategory.findByPk(id);
+        if (!subCategory) {
+          return res.status(404).json({ message: 'SubCategory not found' });
+        }
+        subCategory.isCategorized = !subCategory.isCategorized
+        await subCategory.save();
+        return res.json({ message: 'SubCategory updated successfully' });
+        break;
+      case 'nestedsubcategory':
+        const nestedsubcategory = await NestedSubcategory.findByPk(id);
+        if (!nestedsubcategory) {
+          return res.status(404).json({ message: 'nestedsubcategory not found' });
+        }
+        nestedsubcategory.isCategorized = !nestedsubcategory.isCategorized
+        await nestedsubcategory.save();
+        return res.json({ message: 'Nestedsubcategory updated successfully' });
+        break;
+      case 'subnestedsubcategory':
+        const subnestedsubcategory = await SubNestedSubcategory.findByPk(id);
+        if (!subnestedsubcategory) {
+          return res.status(404).json({ message: 'Subnestedsubcategory not found' });
+        }
+        subnestedsubcategory.isCategorized = !subnestedsubcategory.isCategorized
         await subnestedsubcategory.save();
         return res.json({ message: 'Subnestedsubcategory updated successfully' });
         break;

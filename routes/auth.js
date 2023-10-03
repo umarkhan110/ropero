@@ -279,7 +279,7 @@ router.post("/reset-password-request", async (req, res) => {
         from: "elropero@elropero.app",
         subject: "Reset Link",
         text: "This is your password reset code",
-        html: `<strong><a href="https://www.elropero.app/reset-password?token=${resetToken}">Password Reset Code</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${token}">Staging Password Reset Code</strong>`,
+        html: `<strong><a href="https://www.elropero.app/reset-password?token=${resetToken}">Password Reset Code</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${resetToken}">Staging Password Reset Code</strong>`,
       };
       sgMail.send(msg);
       return res
@@ -334,12 +334,20 @@ router.post("/reset-password", async (req, res) => {
 // Define a route to get all users
 router.get('/get-all-user', async (req, res) => {
   try {
-    let { page = 1, pageSize = 10 } = req.query;
+    let { page = 1, pageSize = 10, search } = req.query;
     // Ensure that pageSize is a numeric value
     pageSize = parseInt(pageSize, 10);
     const offset = (page - 1) * pageSize;
-
-    const users = await User.findAll({
+    const whereClause = {
+      // Add search functionality
+      [Op.or]: [
+        // Customize this list to include relevant fields you want to search in
+        { username: { [Op.like]: `%${search}%` } },
+        // Add more fields as needed
+      ],
+    };
+    const users = await User.findAndCountAll({
+      where: whereClause,
       attributes: ['id', 'username', 'email', 'profileImage', 'isVerified', 'is_disabled'],
       offset,
       limit: pageSize,
@@ -348,7 +356,7 @@ router.get('/get-all-user', async (req, res) => {
       total: users.count,
       page,
       pageSize,
-      users
+      users:users.rows
     });
   } catch (error) {
     console.error(error);
@@ -410,7 +418,7 @@ router.put('/disable-user/:id', async (req, res) => {
     }
 
     // Set the user's is_disabled field to true
-    user.is_disabled = true;
+    user.is_disabled = !user.is_disabled;
     await user.save();
 
     res.json({ message: 'User disabled successfully' });

@@ -7,6 +7,11 @@ const SubNestedSubcategory = sequelize.define('SubNestedSubcategory', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  isCategorized: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  }
 });
 
 export default SubNestedSubcategory;

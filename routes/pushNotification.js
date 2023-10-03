@@ -7,6 +7,8 @@ import User from '../models/User.js';
 const router = express.Router();
 // Import the JSON data with the correct import assertion
 import jsonData from '../el-ropero.json' assert { type: 'json' };
+import checkUserAuthentication from "../middleware/authMiddleware.js";
+import Notifications from "../models/Notification.js";
 
 // Initialize the Firebase Admin SDK with your credentials
 admin.initializeApp({
@@ -15,8 +17,10 @@ admin.initializeApp({
  // Replace with your Firebase project URL
 });
 
-router.post('/send-notification', async (req, res) => {
+router.post('/send-notification', checkUserAuthentication, async (req, res) => {
   try {
+    const sender = req.user;
+    console.log(sender.username)
     const { userId, title, message } = req.body;
 
     // Find the user by their ID
@@ -26,6 +30,13 @@ router.post('/send-notification', async (req, res) => {
     if (!user || !user.fcm_token) {
       return res.status(400).json({ error: 'User not found or FCM token not available' });
     }
+
+    await Notifications.create({
+      sender_name:sender.username,
+      sender_image:sender.profileImage,
+      reciver_id:userId,
+      title: title
+    });
 
     // Prepare the push notification message
     const pushMessage = {
@@ -52,4 +63,19 @@ router.post('/send-notification', async (req, res) => {
   }
 });
 
+// Get All notification by id
+router.get('/all-notification/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const notifications = await Notifications.findAll({
+      where: { reciver_id: userId }, // Use object syntax for 'where'
+    });
+    
+    res.json(notifications);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+);
 export default router;

@@ -90,6 +90,7 @@ router.get('/post', async (req, res) => {
       { model: Subcategory, as: 'subcategory' },
       { model: NestedSubcategory, as: 'nestedsubcategory' },
       { model: SubNestedSubcategory, as: 'subnestedsubcategory' },
+      { model: User, as: 'user', attributes: ['id', 'username', 'profileImage']  },
     ], 
    
     });
@@ -234,7 +235,7 @@ router.get('/viewpost/:id', async (req, res) => {
       { model: Subcategory, as: 'subcategory' },
       { model: NestedSubcategory, as: 'nestedsubcategory' },
       { model: SubNestedSubcategory, as: 'subnestedsubcategory' },
-      { model: User, as: 'user' },
+      { model: User, as: 'user', attributes: ['id', 'username', 'profileImage']  },
     ], 
    
     });
@@ -276,6 +277,7 @@ router.get('/viewpost/:id', async (req, res) => {
               { model: Subcategory, as: 'subcategory' },
               { model: NestedSubcategory, as: 'nestedsubcategory' },
               { model: SubNestedSubcategory, as: 'subnestedsubcategory' },
+              { model: User, as: 'user', attributes: ['id', 'username', 'profileImage']  },
             ],
           });
           
@@ -427,6 +429,7 @@ router.get('/postsfilter', async (req, res) => {
       { model: Subcategory, as: 'subcategory' },
       { model: NestedSubcategory, as: 'nestedsubcategory' },
       { model: SubNestedSubcategory, as: 'subnestedsubcategory' },
+      { model: User, as: 'user', attributes: ['id', 'username', 'profileImage']  },
     ];
 
     // Conditionally include the 'colors' association if 'colorId' is provided
@@ -515,6 +518,7 @@ router.get('/popular-posts', async (req, res) => {
       { model: Subcategory, as: 'subcategory' },
       { model: NestedSubcategory, as: 'nestedsubcategory' },
       { model: SubNestedSubcategory, as: 'subnestedsubcategory' },
+      { model: User, as: 'user', attributes: ['id', 'username', 'profileImage']  },
     ],
     });
 
@@ -586,6 +590,7 @@ router.get('/newest-posts', async (req, res) => {
       { model: Subcategory, as: 'subcategory' },
       { model: NestedSubcategory, as: 'nestedsubcategory' },
       { model: SubNestedSubcategory, as: 'subnestedsubcategory' },
+      { model: User, as: 'user', attributes: ['id', 'username', 'profileImage']  },
     ],
     });
 

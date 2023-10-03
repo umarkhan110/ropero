@@ -6,6 +6,15 @@ const Category = sequelize.define('Category', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
+    unique: true,
+  },
+  categoryIcon: {
+    type: DataTypes.STRING(1000),
+  },
+  isCategorized: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
   }
   // level: {
   //   type: DataTypes.INTEGER

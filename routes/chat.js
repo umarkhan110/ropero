@@ -20,7 +20,10 @@ router.post('/sendMessage', async (req, res) => {
   const { messageText, senderId, receiverId } = req.body;
 
   try {
-    const roomId = `room_for_sender_${senderId}_and_receiver_${receiverId}`;
+    const sortedUserIds = [senderId, receiverId].sort();
+    const roomId = `room_for_sender_${sortedUserIds[0]}_and_receiver_${sortedUserIds[1]}`;
+   
+    // const roomId = `room_for_sender_${senderId}_and_receiver_${receiverId}`;
     const roomRef = doc(firestore, 'rooms', roomId);
     const roomSnapshot = await getDoc(roomRef);
 
@@ -34,14 +37,17 @@ router.post('/sendMessage', async (req, res) => {
 
     const roomData = {
       participants: [senderId, receiverId],
-      senderName: sender ? sender.username : '',
-      senderImage: sender
-        ? sender.profileImage
-        : '',
-      receiverName: receiver ? receiver.username : '',
-      receiverImage: receiver
-        ? receiver.profileImage
-        : '',
+      users: [
+        {id: senderId,
+        name:sender ? sender.username : '',
+      img:sender ? sender.profileImage : ''
+      },
+      {
+        id: receiverId,
+        name: sender ? sender.username : '',
+        img:receiver ? receiver.profileImage : ''
+      }
+      ],
       last_message: {
         text: messageText,
         senderId,
