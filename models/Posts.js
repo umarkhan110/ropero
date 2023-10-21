@@ -19,6 +19,22 @@
       primaryKey: true,
       autoIncrement: true,
     },
+    featured: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    featuredExpiry: {
+      type: DataTypes.DATE,
+    },
+    reserved: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    reservedExpiry: {
+      type: DataTypes.DATE,
+    },
     title: {
       type: DataTypes.STRING,
       allowNull: false
@@ -153,3 +169,12 @@ Posts.belongsToMany(Material, { through: 'PostMaterial', as: 'material', foreign
 Material.belongsToMany(Posts, { through: 'PostMaterial', as: 'posts', foreignKey: 'materialId' });
 
 export default Posts;
+
+
+
+
+// ALTER TABLE `ropero`.`Posts` 
+// ADD COLUMN `featured` TINYINT(1) NULL DEFAULT '0' AFTER `discount_price`,
+// ADD COLUMN `reserved` TINYINT(1) NULL DEFAULT '0' AFTER `featured`,
+// ADD COLUMN `reservedExpiry` VARCHAR(45) NULL AFTER `reserved`,
+// ADD COLUMN `featuredExpiry` VARCHAR(45) NULL AFTER `reservedExpiry`;

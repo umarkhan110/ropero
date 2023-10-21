@@ -25,7 +25,7 @@ AWS.config.update({
   
       try {
         await s3.putObject(params).promise();
-        uploadedImages.push(fileName);
+        uploadedImages.push(`https://ropero.s3.sa-east-1.amazonaws.com/${fileName}`);
       } catch (error) {
         console.error('Error uploading image:', error);
         throw error;

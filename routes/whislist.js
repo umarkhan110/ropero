@@ -55,24 +55,24 @@ router.get('/view/:userId', async (req, res) => {
         },
       ],
     });
-
-    // Extract post data and associated images
-    const postsWithImages = wishlistItems.map((wishlistItem) => {
-      const post = wishlistItem.post;
-      const postJson = post.toJSON();
+// console.log(wishlistItems)
+//     // Extract post data and associated images
+//     const postsWithImages = wishlistItems.map((wishlistItem) => {
+//       const post = wishlistItem.post;
+//       const postJson = post.toJSON();
       
-      // Map the images to add S3 URLs to each image
-      const imagesWithS3Urls = postJson.images.map((image) => ({
-        ...image,
-        imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      }));
+//       // Map the images to add S3 URLs to each image
+//       const imagesWithS3Urls = postJson.images.map((image) => ({
+//         ...image,
+//         imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+//       }));
 
-      postJson.images = imagesWithS3Urls;
+//       postJson.images = imagesWithS3Urls;
       
-      return postJson;
-    });
+//       return postJson;
+//     });
 
-    res.json(postsWithImages);
+    res.json(wishlistItems);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'An error occurred while retrieving the wishlist.' });

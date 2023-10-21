@@ -180,12 +180,12 @@ router.get("/post", async (req, res) => {
     // Map the posts to add S3 URLs to each image
     const postsWithS3Urls = posts.map((post) => {
       const postJson = post.toJSON();
-      postJson.images = postJson.images.map((image) => {
-        return {
-          ...image,
-          imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-        };
-      });
+      // postJson.images = postJson.images.map((image) => {
+      //   return {
+      //     ...image,
+      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+      //   };
+      // });
       const colors = postJson.colors.map((color) => ({
         id: color.id,
         name: color.name,
@@ -256,12 +256,12 @@ router.get("/get-all-post-by-admin", async (req, res) => {
     // Map the posts to add S3 URLs to each image
     const postsWithS3Urls = posts.rows.map((post) => {
       const postJson = post.toJSON();
-      postJson.images = postJson.images.map((image) => {
-        return {
-          ...image,
-          imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-        };
-      });
+      // postJson.images = postJson.images.map((image) => {
+      //   return {
+      //     ...image,
+      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+      //   };
+      // });
       const colors = postJson.colors.map((color) => ({
         id: color.id,
         name: color.name,
@@ -329,12 +329,12 @@ router.get("/viewpost/:id", async (req, res) => {
     post.views += 1;
     await post.save();
     const postJson = post.toJSON();
-    postJson.images = postJson.images.map((image) => {
-      return {
-        ...image,
-        imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      };
-    });
+    // postJson.images = postJson.images.map((image) => {
+    //   return {
+    //     ...image,
+    //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+    //   };
+    // });
     const colors = postJson.colors.map((color) => ({
       id: color.id,
       name: color.name,
@@ -369,10 +369,10 @@ router.get("/viewpost/:id", async (req, res) => {
 
     const postsresponse = posts.map((post) => {
       const postJson = post.toJSON();
-      postJson.images = postJson.images.map((image) => ({
-        ...image,
-        imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      }));
+      // postJson.images = postJson.images.map((image) => ({
+      //   ...image,
+      //   imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+      // }));
       const colors = postJson.colors.map((color) => ({
         id: color.id,
         name: color.name,
@@ -543,6 +543,302 @@ router.put(
   }
 );
 
+// Feature Post by Id
+router.put(
+  "/feature-post/:id",
+  checkUserAuthentication,
+  async (req, res) => {
+    try {
+      const user = req.user;
+      if(user){
+
+
+      if (req.user.credits < 5) {
+        return res.status(404).json({ error: "You don't have enough credits" });
+      }
+      const postId = req.params.id;
+      const postExist = await Posts.findByPk(postId);
+
+      if (!postExist) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+
+      if (postExist.featured === true) {
+        return res.status(404).json({ error: "Post is already featured" });
+      }
+
+      // Set the featuredExpiry date to one day from the current date
+    const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
+    const currentDateTime = new Date();
+    const featuredExpiryDate = new Date(currentDateTime.getTime() + oneDayInMilliseconds);
+// console.log(featuredExpiryDate)
+    postExist.featured = true;
+    postExist.featuredExpiry = featuredExpiryDate;
+
+      await postExist.save();
+      return res.json({ postExist, message: "Post featured successfully" });
+    }
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ error: "An error occurred while creating a post." });
+    }
+  }
+);
+
+// Reserve a post by Id
+router.put(
+  "/reserve-post/:id",
+  checkUserAuthentication,
+  async (req, res) => {
+    try {
+      const user = req.user;
+      if (req.user.credits < 5) {
+        return res.status(404).json({ error: "You don't have enough credits" });
+      }
+      const postId = req.params.id;
+      const postExist = await Posts.findByPk(postId);
+
+      if (!postExist) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+
+      if (postExist.reserved === true) {
+        return res.status(404).json({ error: "Post is already reserved" });
+      }
+
+      // Set the reservedExpiry date to one day from the current date
+    const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
+    const currentDateTime = new Date();
+    const reservedExpiryDate = new Date(currentDateTime.getTime() + oneDayInMilliseconds);
+
+    postExist.reserved = true;
+    postExist.reservedExpiry = reservedExpiryDate;
+
+      await postExist.save();
+      return res.json({ postExist, message: "Post reserved successfully" });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ error: "An error occurred while creating a post." });
+    }
+  }
+);
+
+// Get all posts of user
+router.get('/users-posts', checkUserAuthentication, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const filters = {};
+    filters.is_Approved = true;
+    filters.userId = userId;
+    const posts = await Posts.findAll({
+      where: filters,
+      include: [
+        { model: Images, as: "images" },
+        { model: Brand, as: "brand" },
+        { model: Size, as: "size", attributes: ["name"] },
+        { model: Colors, as: "colors", attributes: ["id", "name"] },
+        { model: Material, as: "material", attributes: ["id", "name"] },
+        { model: Category, as: "category" },
+        { model: Subcategory, as: "subcategory" },
+        { model: NestedSubcategory, as: "nestedsubcategory" },
+        { model: SubNestedSubcategory, as: "subnestedsubcategory" },
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "username", "profileImage"],
+        },
+      ],
+    });
+
+    // Map the posts to add S3 URLs to each image
+    const postsWithS3Urls = posts.map((post) => {
+      const postJson = post.toJSON();
+      // postJson.images = postJson.images.map((image) => {
+      //   return {
+      //     ...image,
+      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+      //   };
+      // });
+      const colors = postJson.colors.map((color) => ({
+        id: color.id,
+        name: color.name,
+      }));
+      const materials = postJson.material.map((material) => ({
+        id: material.id,
+        name: material.name,
+      }));
+      return {
+        ...postJson,
+        brandName: postJson.brand.name,
+        categoryName: postJson.category.name,
+        subcategoryName: postJson.subcategory.name,
+        nestedsubcategoryName: postJson.nestedsubcategory.name,
+        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
+        brand: undefined, // Add brand name to the response
+        colors: colors,
+        material: materials,
+        category: undefined,
+        subcategory: undefined,
+        nestedsubcategory: undefined,
+        subnestedsubcategory: undefined,
+      };
+      // return postJson;
+    });
+
+    res.json(postsWithS3Urls);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// Get all featured posts
+router.get('/featured-posts', checkUserAuthentication, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const filters = {};
+    filters.is_Approved = true;
+    filters.userId = userId;
+    filters.featured = true;
+    // Find all posts with feature = true for the given userId
+    const posts = await Posts.findAll({
+      where: filters,
+      include: [
+        { model: Images, as: "images" },
+        { model: Brand, as: "brand" },
+        { model: Size, as: "size", attributes: ["name"] },
+        { model: Colors, as: "colors", attributes: ["id", "name"] },
+        { model: Material, as: "material", attributes: ["id", "name"] },
+        { model: Category, as: "category" },
+        { model: Subcategory, as: "subcategory" },
+        { model: NestedSubcategory, as: "nestedsubcategory" },
+        { model: SubNestedSubcategory, as: "subnestedsubcategory" },
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "username", "profileImage"],
+        },
+      ],
+    });
+
+    // Map the posts to add S3 URLs to each image
+    const postsWithS3Urls = posts.map((post) => {
+      const postJson = post.toJSON();
+      // postJson.images = postJson.images.map((image) => {
+      //   return {
+      //     ...image,
+      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+      //   };
+      // });
+      const colors = postJson.colors.map((color) => ({
+        id: color.id,
+        name: color.name,
+      }));
+      const materials = postJson.material.map((material) => ({
+        id: material.id,
+        name: material.name,
+      }));
+      return {
+        ...postJson,
+        brandName: postJson.brand.name,
+        categoryName: postJson.category.name,
+        subcategoryName: postJson.subcategory.name,
+        nestedsubcategoryName: postJson.nestedsubcategory.name,
+        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
+        brand: undefined, // Add brand name to the response
+        colors: colors,
+        material: materials,
+        category: undefined,
+        subcategory: undefined,
+        nestedsubcategory: undefined,
+        subnestedsubcategory: undefined,
+      };
+      // return postJson;
+    });
+
+    res.json(postsWithS3Urls);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// Get all reserved posts
+router.get('/reserved-posts', checkUserAuthentication, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const filters = {};
+    filters.is_Approved = true;
+    filters.userId = userId;
+    filters.reserved = true;
+    // Find all posts with feature = true for the given userId
+    const posts = await Posts.findAll({
+      where: filters,
+      include: [
+        { model: Images, as: "images" },
+        { model: Brand, as: "brand" },
+        { model: Size, as: "size", attributes: ["name"] },
+        { model: Colors, as: "colors", attributes: ["id", "name"] },
+        { model: Material, as: "material", attributes: ["id", "name"] },
+        { model: Category, as: "category" },
+        { model: Subcategory, as: "subcategory" },
+        { model: NestedSubcategory, as: "nestedsubcategory" },
+        { model: SubNestedSubcategory, as: "subnestedsubcategory" },
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "username", "profileImage"],
+        },
+      ],
+    });
+
+    // Map the posts to add S3 URLs to each image
+    const postsWithS3Urls = posts.map((post) => {
+      const postJson = post.toJSON();
+      // postJson.images = postJson.images.map((image) => {
+      //   return {
+      //     ...image,
+      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+      //   };
+      // });
+      const colors = postJson.colors.map((color) => ({
+        id: color.id,
+        name: color.name,
+      }));
+      const materials = postJson.material.map((material) => ({
+        id: material.id,
+        name: material.name,
+      }));
+      return {
+        ...postJson,
+        brandName: postJson.brand.name,
+        categoryName: postJson.category.name,
+        subcategoryName: postJson.subcategory.name,
+        nestedsubcategoryName: postJson.nestedsubcategory.name,
+        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
+        brand: undefined, // Add brand name to the response
+        colors: colors,
+        material: materials,
+        category: undefined,
+        subcategory: undefined,
+        nestedsubcategory: undefined,
+        subnestedsubcategory: undefined,
+      };
+      // return postJson;
+    });
+
+    res.json(postsWithS3Urls);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+
 // Delete post by ID
 router.delete("/deletepost/:id", async (req, res) => {
   try {
@@ -668,10 +964,10 @@ router.get("/postsfilter", async (req, res) => {
 
     const postsWithS3Urls = filteredPosts.map((post) => {
       const postJson = post.toJSON();
-      postJson.images = postJson.images.map((image) => ({
-        ...image,
-        imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      }));
+      // postJson.images = postJson.images.map((image) => ({
+      //   ...image,
+      //   imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+      // }));
       const colors = postJson.colors.map((color) => ({
         id: color.id,
         name: color.name,
@@ -742,12 +1038,12 @@ router.get("/popular-posts", async (req, res) => {
 
     const postsWithS3Urls = highestViewsPosts.map((post) => {
       const postJson = post.toJSON();
-      postJson.images = postJson.images.map((image) => {
-        return {
-          ...image,
-          imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-        };
-      });
+      // postJson.images = postJson.images.map((image) => {
+      //   return {
+      //     ...image,
+      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+      //   };
+      // });
       const colors = postJson.colors.map((color) => ({
         id: color.id,
         name: color.name,
@@ -819,12 +1115,12 @@ router.get("/newest-posts", async (req, res) => {
 
     const postsWithS3Urls = newestPosts.map((post) => {
       const postJson = post.toJSON();
-      postJson.images = postJson.images.map((image) => {
-        return {
-          ...image,
-          imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-        };
-      });
+      // postJson.images = postJson.images.map((image) => {
+      //   return {
+      //     ...image,
+      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
+      //   };
+      // });
       const colors = postJson.colors.map((color) => ({
         id: color.id,
         name: color.name,

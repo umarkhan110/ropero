@@ -69,7 +69,7 @@ router.get("/qr-status/:id",checkUserAuthentication, async (req, res) => {
       data
     );
     if (getToken.status === 200) {
-      console.log(getToken.data.message)
+      // console.log(getToken.data.message)
       const data2= {
         qrId:qrId
     }
@@ -84,12 +84,14 @@ router.get("/qr-status/:id",checkUserAuthentication, async (req, res) => {
       ); 
       // console.log(qrStatus)
       if(qrStatus.status === 200){
-        console.log("gjhjhg")
+        // console.log("gjhjhg")
         const existingQrCode = await QrCode.findOne({
           where: { qrId: qrId },
         });
         if(existingQrCode){
-          console.log("abc:", existingQrCode.credits)
+          // console.log("abc:", existingQrCode.credits)
+          existingQrCode.status = "Completed"
+          await existingQrCode.save();
           const user = req.user;
           user.credits =  user.credits + existingQrCode.credits;
           await user.save();
@@ -104,10 +106,10 @@ router.get("/qr-status/:id",checkUserAuthentication, async (req, res) => {
   }
 });
 
-// Get subscriptions
+// Get all subscriptions
 router.get("/get-all-subscription", async (req, res) => {
   try {
-    const subscriptions = await QrCode.findAll();
+    const subscriptions = await QrCode.findAll({where: {status: "Completed"}});
     res.json(subscriptions);
   } catch (error) {
     console.error(error);

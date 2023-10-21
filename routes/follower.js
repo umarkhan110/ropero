@@ -46,13 +46,13 @@ router.get('/followers/:userId', async (req, res) => {
       include: [{ model: User, as: 'user' }],
     });
 
-    console.log("thisis follow : ",followers)
+    console.log("this is follow : ",followers)
     // Extract follower information
     const followerList = followers.map((follow) => {
       return {
         userId: follow.user.id,
         username:follow.user.username,
-        profileImage:`https://ropero.s3.sa-east-1.amazonaws.com/${follow.user.profileImage}`
+        profileImage:follow.user.profileImage
       };
     });
 

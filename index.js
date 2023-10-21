@@ -50,6 +50,7 @@ import notificationRoutes from './routes/pushNotification.js'
 import paymentRoutes from './routes/payment.js'
 import qrcodeRoutes from './routes/qrcode.js';
 import packagesRoutes from './routes/packages.js';
+import dashboardRoutes from './routes/dashboard.js';
 
 app.use('/auth', authRoutes);
 app.use('/cate', categoriesRoutes);
@@ -63,6 +64,7 @@ app.use('/notification', notificationRoutes)
 app.use('/', paymentRoutes)
 app.use('/qrcode', qrcodeRoutes)
 app.use('/packages', packagesRoutes)
+app.use('/dashboard', dashboardRoutes)
 
 Category.hasMany(Subcategory, {
   foreignKey: 'categoryId',
