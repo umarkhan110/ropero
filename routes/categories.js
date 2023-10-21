@@ -108,10 +108,19 @@ router.post('/categories', upload.single("categoryIcon"), async (req, res) => {
 });
 
 // Create a new subcategory under a specific category
-router.post('/subcategory', async (req, res) => {
+router.post('/subcategory', upload.single("categoryIcon"), async (req, res) => {
   const { name, categoryId } = req.body;
   try {
-    const subcategory = await Subcategory.create({ name, categoryId });
+         // Upload profile image to S3
+         let categoryIcon = null;
+         if (req.file) {
+           const uploadResponse = await profileImageToS3(
+             req.file.buffer,
+             req.file.originalname
+           );
+           categoryIcon = uploadResponse; // Store the S3 URL in the database
+         }
+    const subcategory = await Subcategory.create({ name, categoryId, categoryIcon:categoryIcon });
     res.status(201).json(subcategory);
   } catch (error) {
     res.status(500).json({ error: 'An error occurred while creating the brand.' });
@@ -233,16 +242,16 @@ router.put('/update-categories/:id', upload.single("categoryIcon"),  async (req,
     switch (type) {
       case 'category':
              // Check if the category name already exists
-     const existingCategory = await Category.findOne({
-      where: {
-        name: name
-      },
-    });
-    if (existingCategory) {
-      return res
-        .status(400)
-        .json({ error: "Category name is already in use." });
-    }
+    //  const existingCategory = await Category.findOne({
+    //   where: {
+    //     name: name
+    //   },
+    // });
+    // if (existingCategory) {
+    //   return res
+    //     .status(400)
+    //     .json({ error: "Category name is already in use." });
+    // }
         let categoryIcon = null;
      if (req.file) {
        const uploadResponse = await profileImageToS3(
@@ -258,16 +267,25 @@ router.put('/update-categories/:id', upload.single("categoryIcon"),  async (req,
         category.name = name ? name : category.name;
         category.categoryIcon = categoryIcon ? categoryIcon : category.categoryIcon 
         await category.save();
-        return res.json({ message: 'Category updated successfully' });
+        return res.json({ category, message: 'Category updated successfully' });
         break;
       case 'subcategory':
+        let subcategoryIcon = null;
+        if (req.file) {
+          const uploadResponse = await profileImageToS3(
+            req.file.buffer,
+            req.file.originalname
+          );
+          subcategoryIcon = uploadResponse; // Store the S3 URL in the database
+        }
         const subCategory = await Subcategory.findByPk(id);
         if (!subCategory) {
           return res.status(404).json({ message: 'SubCategory not found' });
         }
         subCategory.name = name;
+        subCategory.categoryIcon = subcategoryIcon ? subcategoryIcon : subCategory.categoryIcon 
         await subCategory.save();
-        return res.json({ message: 'SubCategory updated successfully' });
+        return res.json({ subCategory, message: 'SubCategory updated successfully' });
         break;
       case 'nestedsubcategory':
         const nestedsubcategory = await NestedSubcategory.findByPk(id);
@@ -276,7 +294,7 @@ router.put('/update-categories/:id', upload.single("categoryIcon"),  async (req,
         }
         nestedsubcategory.name = name;
         await nestedsubcategory.save();
-        return res.json({ message: 'Nestedsubcategory updated successfully' });
+        return res.json({ nestedsubcategory, message: 'Nestedsubcategory updated successfully' });
         break;
       case 'subnestedsubcategory':
         const subnestedsubcategory = await SubNestedSubcategory.findByPk(id);
@@ -285,7 +303,7 @@ router.put('/update-categories/:id', upload.single("categoryIcon"),  async (req,
         }
         subnestedsubcategory.name = name;
         await subnestedsubcategory.save();
-        return res.json({ message: 'Subnestedsubcategory updated successfully' });
+        return res.json({ subnestedsubcategory, message: 'Subnestedsubcategory updated successfully' });
         break;
       default:
         res.status(400).json({ error: 'Invalid type specified in the request.' });

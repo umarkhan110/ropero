@@ -33,6 +33,19 @@ const User = sequelize.define("User", {
   profileImage: {
     type: DataTypes.STRING,
   },
+  address: {
+    type: DataTypes.STRING,
+  },
+  city: {
+    type: DataTypes.STRING,
+  },
+  state: {
+    type: DataTypes.STRING,
+  },
+  credits: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
   provider: {
     type: DataTypes.STRING,
   },
@@ -47,3 +60,7 @@ const User = sequelize.define("User", {
 });
 
 export default User;
+
+
+// ALTER TABLE `ropero`.`Users` 
+// ADD COLUMN `credits` INT NULL DEFAULT 0 AFTER `state`;

@@ -47,6 +47,9 @@ import followerRoutes from './routes/follower.js';
 import ratingRoutes from './routes/rating.js';
 import chatRoutes from './routes/chat.js';
 import notificationRoutes from './routes/pushNotification.js'
+import paymentRoutes from './routes/payment.js'
+import qrcodeRoutes from './routes/qrcode.js';
+import packagesRoutes from './routes/packages.js';
 
 app.use('/auth', authRoutes);
 app.use('/cate', categoriesRoutes);
@@ -57,6 +60,9 @@ app.use('/follower', followerRoutes);
 app.use('/rating', ratingRoutes);
 app.use('/chat', chatRoutes);
 app.use('/notification', notificationRoutes)
+app.use('/', paymentRoutes)
+app.use('/qrcode', qrcodeRoutes)
+app.use('/packages', packagesRoutes)
 
 Category.hasMany(Subcategory, {
   foreignKey: 'categoryId',

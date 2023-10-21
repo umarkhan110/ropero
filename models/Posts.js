@@ -30,6 +30,9 @@
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    discount_price: {
+      type: DataTypes.INTEGER,
+    },
     sizeId: {
       type: DataTypes.INTEGER,
       references: {

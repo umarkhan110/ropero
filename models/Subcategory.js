@@ -8,6 +8,9 @@ const Subcategory = sequelize.define('Subcategory', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  categoryIcon: {
+    type: DataTypes.STRING(1000),
+  },
   isCategorized: {
     type: DataTypes.BOOLEAN,
     allowNull: false,

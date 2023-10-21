@@ -246,7 +246,11 @@ router.post("/login", async (req, res) => {
         id: user.id,
         username: user.username,
         profileImage: user.profileImage,
-        fcm_token: fcm_token
+        fcm_token: fcm_token,
+        address: user.address,
+        city:user.city,
+        state: user.state,
+        credits: user.credits
       },
     });
   }
@@ -367,7 +371,7 @@ router.get('/get-all-user', async (req, res) => {
 // Route to update user details
 router.put('/update-user/:id', upload.single("profileImage"), async (req, res) => {
   const userId = req.params.id;
-  const { username, password } = req.body;
+  const { username, password, address, city, state } = req.body;
 
   try {
     const user = await User.findByPk(userId);
@@ -392,7 +396,10 @@ router.put('/update-user/:id', upload.single("profileImage"), async (req, res) =
       // Update user details based on your conditions
       user.username = username || user.username;
       user.password = hashedPassword !== undefined ? hashedPassword : user.password;
-      user.profileImage = profileImage
+      user.profileImage = profileImage;
+      user.address = address;
+      user.city = city;
+      user.state = state
 
       await user.save();
 
@@ -422,6 +429,33 @@ router.put('/disable-user/:id', async (req, res) => {
     await user.save();
 
     res.json({ message: 'User disabled successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Get User Detail by Id
+router.get('/user-detail/:id', async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ 
+      user: {
+        id: user.id,
+        username: user.username,
+        profileImage: user.profileImage,
+        email: user.email,
+        address: user.address,
+        city:user.city,
+        state: user.state
+      } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal Server Error' });

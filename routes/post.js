@@ -22,6 +22,8 @@ import checkUserAuthentication from '../middleware/authMiddleware.js';
 // Create a new post
 router.post('/post', checkUserAuthentication,  upload.array('images', 10), async (req, res) => {
   try {
+    console.log(req.user.credits)
+    if(req.user.credits > 0){
     // Prepare images for uploading to S3
     const images = req.files.map((file, index) => {
       return {
@@ -32,7 +34,7 @@ router.post('/post', checkUserAuthentication,  upload.array('images', 10), async
     // Upload images to S3
     const uploadedImages = await uploadImagesToS3(images);
     
-    const {userId, title,description,price,colorId, sizeId, materialId, parcel_size, brandId, condition, delivery_type, shipping, type, lat,lng, city,street, floor,state, categoryId, subcategoryId, nestedsubcategoryId, subnestedsubcategoryId } = req.body;
+    const {userId, title,description,price,discount_price,colorId, sizeId, materialId, parcel_size, brandId, condition, delivery_type, shipping, type, lat,lng, city,street, floor,state, categoryId, subcategoryId, nestedsubcategoryId, subnestedsubcategoryId } = req.body;
      // Check for missing required fields
      if (!userId || !title || !price || !categoryId || !city || !street || !lat || !lng || !brandId || !state) {
       return res.status(400).json({ error: 'All fields must be filled.' });
@@ -48,7 +50,7 @@ router.post('/post', checkUserAuthentication,  upload.array('images', 10), async
 
      const materialIds = materialId ? materialId.split(',').map(Number) : [];
 
-    const post = await  Posts.create({ userId,title,description,price,colorId:colorIds, sizeId, materialId:materialIds, parcel_size, brandId, condition, delivery_type, shipping, type, lat,lng, city,street, floor,state,categoryId, subcategoryId, nestedsubcategoryId, subnestedsubcategoryId });
+    const post = await  Posts.create({ userId,title,description,price,discount_price,colorId:colorIds, sizeId, materialId:materialIds, parcel_size, brandId, condition, delivery_type, shipping, type, lat,lng, city,street, floor,state,categoryId, subcategoryId, nestedsubcategoryId, subnestedsubcategoryId });
    
         // Associate colors with the post
         await post.setColors(colorIds);
@@ -62,7 +64,13 @@ router.post('/post', checkUserAuthentication,  upload.array('images', 10), async
       });
     }
 
+    const user = req.user;
+    user.credits = user.credits - 1
+    await user.save();
     res.status(201).json(post);
+  }else{
+    return res.status(400).json({ message: 'You do not have credit' });
+  }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'An error occurred while creating a post.' });
@@ -666,3 +674,5 @@ router.put('/aprrove-disapprove/:id', async (req, res) => {
 });
 
 export default router;
+
+

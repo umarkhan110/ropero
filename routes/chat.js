@@ -44,7 +44,7 @@ router.post('/sendMessage', async (req, res) => {
       },
       {
         id: receiverId,
-        name: sender ? sender.username : '',
+        name: receiver ? receiver.username : '',
         img:receiver ? receiver.profileImage : ''
       }
       ],
