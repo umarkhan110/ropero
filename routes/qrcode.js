@@ -56,7 +56,7 @@ router.post("/subscribed", async (req, res) => {
 });
 
 // Verify Payment
-router.post("/qr-status/:id",checkUserAuthentication, async (req, res) => {
+router.get("/qr-status/:id",checkUserAuthentication, async (req, res) => {
   // console.log(req.user)
   const qrId = req.params.id;
   try {
@@ -91,8 +91,9 @@ router.post("/qr-status/:id",checkUserAuthentication, async (req, res) => {
         if(existingQrCode){
           console.log("abc:", existingQrCode.credits)
           const user = req.user;
-          user.credits =  existingQrCode.credits;
+          user.credits =  user.credits + existingQrCode.credits;
           await user.save();
+          qrStatus.data.message = `${existingQrCode.credits} Credits are added into your account`
           res.json(qrStatus.data);
         }
       }

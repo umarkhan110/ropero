@@ -7,7 +7,7 @@ const router = express.Router();
 router.post('/create-package', async (req, res) => {
     try {
       const { package_name, package_desc, credits, amount } = req.body;
-      const Package = await Packages .create({ package_name, package_desc, credits, amount });
+      const Package = await Packages.create({ package_name, package_desc, credits, amount });
       res.status(201).json(Package);
     } catch (error) {
       console.error(error);
@@ -18,8 +18,8 @@ router.post('/create-package', async (req, res) => {
   // Get Packages
   router.get('/get-all-packages', async (req, res) => {
     try {
-      const Packages = await Packages.findAll();
-      res.json(Packages);
+        const allPackages = await Packages.findAll();
+        res.status(201).json(allPackages);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Internal Server Error' });

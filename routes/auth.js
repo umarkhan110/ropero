@@ -454,7 +454,8 @@ router.get('/user-detail/:id', async (req, res) => {
         email: user.email,
         address: user.address,
         city:user.city,
-        state: user.state
+        state: user.state,
+        credits: user.credits
       } });
   } catch (error) {
     console.error(error);
