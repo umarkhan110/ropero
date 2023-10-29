@@ -46,6 +46,10 @@ const User = sequelize.define("User", {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
+  no_of_posts: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
   provider: {
     type: DataTypes.STRING,
   },
@@ -64,3 +68,4 @@ export default User;
 
 // ALTER TABLE `ropero`.`Users` 
 // ADD COLUMN `credits` INT NULL DEFAULT 0 AFTER `state`;
+

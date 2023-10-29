@@ -27,116 +27,228 @@ router.post(
   async (req, res) => {
     try {
       console.log(req.user.credits);
-      if (req.user.credits > 0) {
-        // Prepare images for uploading to S3
-        const images = req.files.map((file, index) => {
-          return {
-            imageData: file.buffer,
-            fileName: file.originalname,
-          };
-        });
-        // Upload images to S3
-        const uploadedImages = await uploadImagesToS3(images);
-
-        const {
-          userId,
-          title,
-          description,
-          price,
-          discount_price,
-          colorId,
-          sizeId,
-          materialId,
-          parcel_size,
-          brandId,
-          condition,
-          delivery_type,
-          shipping,
-          type,
-          lat,
-          lng,
-          city,
-          street,
-          floor,
-          state,
-          categoryId,
-          subcategoryId,
-          nestedsubcategoryId,
-          subnestedsubcategoryId,
-        } = req.body;
-        // Check for missing required fields
-        if (
-          !userId ||
-          !title ||
-          !price ||
-          !categoryId ||
-          !city ||
-          !street ||
-          !lat ||
-          !lng ||
-          !brandId ||
-          !state
-        ) {
-          return res.status(400).json({ error: "All fields must be filled." });
-        }
-
-        // Check if no images were uploaded
-        if (uploadedImages.length === 0) {
-          return res
-            .status(400)
-            .json({ error: "At least one image is required." });
-        }
-
-        // Check if colorId is provided before using split
-        const colorIds = colorId ? colorId.split(",").map(Number) : [];
-
-        const materialIds = materialId ? materialId.split(",").map(Number) : [];
-
-        const post = await Posts.create({
-          userId,
-          title,
-          description,
-          price,
-          discount_price,
-          colorId: colorIds,
-          sizeId,
-          materialId: materialIds,
-          parcel_size,
-          brandId,
-          condition,
-          delivery_type,
-          shipping,
-          type,
-          lat,
-          lng,
-          city,
-          street,
-          floor,
-          state,
-          categoryId,
-          subcategoryId,
-          nestedsubcategoryId,
-          subnestedsubcategoryId,
-        });
-
-        // Associate colors with the post
-        await post.setColors(colorIds);
-        await post.setMaterial(materialIds);
-
-        // Create Images records and associate with the post
-        for (const imageName of uploadedImages) {
-          await Images.create({
-            postId: post.id,
-            imageUrl: imageName,
+      if(req.user.no_of_posts > 5){
+        if (req.user.credits > 1) {
+          // Prepare images for uploading to S3
+          const images = req.files.map((file, index) => {
+            return {
+              imageData: file.buffer,
+              fileName: file.originalname,
+            };
           });
+          // Upload images to S3
+          const uploadedImages = await uploadImagesToS3(images);
+  
+          const {
+            userId,
+            title,
+            description,
+            price,
+            discount_price,
+            colorId,
+            sizeId,
+            materialId,
+            parcel_size,
+            brandId,
+            condition,
+            delivery_type,
+            shipping,
+            type,
+            lat,
+            lng,
+            city,
+            street,
+            floor,
+            state,
+            categoryId,
+            subcategoryId,
+            nestedsubcategoryId,
+            subnestedsubcategoryId,
+          } = req.body;
+          // Check for missing required fields
+          if (
+            !userId ||
+            !title ||
+            !price ||
+            !categoryId ||
+            !city ||
+            !street ||
+            !lat ||
+            !lng ||
+            !brandId ||
+            !state
+          ) {
+            return res.status(400).json({ error: "All fields must be filled." });
+          }
+  
+          // Check if no images were uploaded
+          if (uploadedImages.length === 0) {
+            return res
+              .status(400)
+              .json({ error: "At least one image is required." });
+          }
+  
+          // Check if colorId is provided before using split
+          const colorIds = colorId ? colorId.split(",").map(Number) : [];
+  
+          const materialIds = materialId ? materialId.split(",").map(Number) : [];
+  
+          const post = await Posts.create({
+            userId,
+            title,
+            description,
+            price,
+            discount_price,
+            colorId: colorIds,
+            sizeId,
+            materialId: materialIds,
+            parcel_size,
+            brandId,
+            condition,
+            delivery_type,
+            shipping,
+            type,
+            lat,
+            lng,
+            city,
+            street,
+            floor,
+            state,
+            categoryId,
+            subcategoryId,
+            nestedsubcategoryId,
+            subnestedsubcategoryId,
+          });
+  
+          // Associate colors with the post
+          await post.setColors(colorIds);
+          await post.setMaterial(materialIds);
+  
+          // Create Images records and associate with the post
+          for (const imageName of uploadedImages) {
+            await Images.create({
+              postId: post.id,
+              imageUrl: imageName,
+            });
+          }
+  
+          const user = req.user;
+          user.credits = user.credits - 2;
+          user.no_of_posts = user.no_of_posts + 1;
+          await user.save();
+          res.status(201).json(post);
+        } else {
+          return res.status(400).json({ message: "You do not have credit" });
         }
-
-        const user = req.user;
-        user.credits = user.credits - 1;
-        await user.save();
-        res.status(201).json(post);
-      } else {
-        return res.status(400).json({ message: "You do not have credit" });
+      }else{
+            // Prepare images for uploading to S3
+            const images = req.files.map((file, index) => {
+              return {
+                imageData: file.buffer,
+                fileName: file.originalname,
+              };
+            });
+            // Upload images to S3
+            const uploadedImages = await uploadImagesToS3(images);
+    
+            const {
+              userId,
+              title,
+              description,
+              price,
+              discount_price,
+              colorId,
+              sizeId,
+              materialId,
+              parcel_size,
+              brandId,
+              condition,
+              delivery_type,
+              shipping,
+              type,
+              lat,
+              lng,
+              city,
+              street,
+              floor,
+              state,
+              categoryId,
+              subcategoryId,
+              nestedsubcategoryId,
+              subnestedsubcategoryId,
+            } = req.body;
+            // Check for missing required fields
+            if (
+              !userId ||
+              !title ||
+              !price ||
+              !categoryId ||
+              !city ||
+              !street ||
+              !lat ||
+              !lng ||
+              !brandId ||
+              !state
+            ) {
+              return res.status(400).json({ error: "All fields must be filled." });
+            }
+    
+            // Check if no images were uploaded
+            if (uploadedImages.length === 0) {
+              return res
+                .status(400)
+                .json({ error: "At least one image is required." });
+            }
+    
+            // Check if colorId is provided before using split
+            const colorIds = colorId ? colorId.split(",").map(Number) : [];
+    
+            const materialIds = materialId ? materialId.split(",").map(Number) : [];
+    
+            const post = await Posts.create({
+              userId,
+              title,
+              description,
+              price,
+              discount_price,
+              colorId: colorIds,
+              sizeId,
+              materialId: materialIds,
+              parcel_size,
+              brandId,
+              condition,
+              delivery_type,
+              shipping,
+              type,
+              lat,
+              lng,
+              city,
+              street,
+              floor,
+              state,
+              categoryId,
+              subcategoryId,
+              nestedsubcategoryId,
+              subnestedsubcategoryId,
+            });
+    
+            // Associate colors with the post
+            await post.setColors(colorIds);
+            await post.setMaterial(materialIds);
+    
+            // Create Images records and associate with the post
+            for (const imageName of uploadedImages) {
+              await Images.create({
+                postId: post.id,
+                imageUrl: imageName,
+              });
+            }
+    
+            const user = req.user;
+            // user.credits = user.credits - 1;
+            user.no_of_posts = user.no_of_posts + 1;
+            await user.save();
+            res.status(201).json(post);
       }
     } catch (error) {
       console.error(error);
@@ -568,10 +680,9 @@ router.put(
       }
 
       // Set the featuredExpiry date to one day from the current date
-    const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
+    const oneDayInMilliseconds = 24 * 60 * 60 * 1000 * 14;
     const currentDateTime = new Date();
     const featuredExpiryDate = new Date(currentDateTime.getTime() + oneDayInMilliseconds);
-// console.log(featuredExpiryDate)
     postExist.featured = true;
     postExist.featuredExpiry = featuredExpiryDate;
 

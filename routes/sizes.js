@@ -6,8 +6,8 @@ const router = express.Router();
 // Create a new size
 router.post('/size', async (req, res) => {
   try {
-    const { name } = req.body;
-    const size = await  Size.create({ name });
+    const { name, size_category } = req.body;
+    const size = await  Size.create({ name, size_category });
     res.status(201).json(size);
   } catch (error) {
     console.error(error);

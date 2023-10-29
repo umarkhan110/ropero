@@ -5,6 +5,10 @@ const Size = sequelize.define('Size', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  size_category: {
+    type: DataTypes.STRING,
+    allowNull: false,
   }
 });
 
