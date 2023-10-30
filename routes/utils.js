@@ -7,8 +7,8 @@ const router = express.Router();
 // Create a new size
 router.post('/size', async (req, res) => {
   try {
-    const { name, size_category } = req.body;
-    const size = await  Size.create({ name, size_category });
+    const { name, size_category, title } = req.body;
+    const size = await  Size.create({ name, size_category, title });
     res.status(201).json(size);
   } catch (error) {
     console.error(error);
@@ -33,7 +33,7 @@ router.get('/size', async (req, res) => {
 router.put('/update-size/:id', async (req, res) => {
   try {
     const sizeId = req.params.id;
-    const { name, size_category } = req.body;
+    const { name, title, size_category } = req.body;
     const size = await Size.findByPk(sizeId);
 
     if (!size) {
@@ -41,6 +41,7 @@ router.put('/update-size/:id', async (req, res) => {
     }
     size.name = name;
     size.size_category = size_category;
+    size.title = title;
     await size.save();
     return res.json({ message: 'Size updated successfully' });
   } catch (error) {

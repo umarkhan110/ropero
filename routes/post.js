@@ -538,11 +538,10 @@ router.get("/viewpost/:id", async (req, res) => {
 // Update Post by Id
 router.put(
   "/update-post/:id",
-  checkUserAuthentication,
   upload.array("images", 10),
   async (req, res) => {
     try {
-      const user = req.user;
+      // const user = req.user;
       const postId = req.params.id;
       const postExist = await Posts.findByPk(postId);
 
@@ -594,7 +593,7 @@ router.put(
         : postExist.materialId;
 
       // const post = await  Posts.update({
-      (postExist.userId = user.id),
+      // (postExist.userId = user.id),
         (postExist.title = title ? title : postExist.title),
         (postExist.description = description
           ? description

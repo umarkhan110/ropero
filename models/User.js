@@ -64,8 +64,3 @@ const User = sequelize.define("User", {
 });
 
 export default User;
-
-
-// ALTER TABLE `ropero`.`Users` 
-// ADD COLUMN `credits` INT NULL DEFAULT 0 AFTER `state`;
-
