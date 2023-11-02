@@ -80,7 +80,9 @@ router.post("/socialLogin", async (req, res) => {
           profileImage,
           provider: provider,
           isVerified: true,
-            
+          state: "",
+          city: "",
+          address: ""
         });
         const token = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, {
           expiresIn: process.env.TOKEN_EXPIRY_DAYS,
@@ -250,7 +252,10 @@ router.post("/login", async (req, res) => {
         address: user.address,
         city:user.city,
         state: user.state,
-        credits: user.credits
+        credits: user.credits,
+        no_of_posts: user.no_of_posts,
+        isVerified: user.isVerified,
+        provider: user.provider
       },
     });
   }
@@ -352,7 +357,7 @@ router.get('/get-all-user', async (req, res) => {
     };
     const users = await User.findAndCountAll({
       where: whereClause,
-      attributes: ['id', 'username', 'email', 'profileImage', 'isVerified', 'is_disabled'],
+      attributes: ['id', 'username', 'email', 'profileImage', 'isVerified', 'is_disabled', 'no_of_posts'],
       offset,
       limit: pageSize,
     });
@@ -455,7 +460,10 @@ router.get('/user-detail/:id', async (req, res) => {
         address: user.address,
         city:user.city,
         state: user.state,
-        credits: user.credits
+        credits: user.credits,
+        no_of_posts: user.no_of_posts,
+        isVerified: user.isVerified,
+        provider: user.provider,
       } });
   } catch (error) {
     console.error(error);

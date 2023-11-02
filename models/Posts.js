@@ -35,6 +35,9 @@
     reservedExpiry: {
       type: DataTypes.DATE,
     },
+    reservedUserId :{
+      type: DataTypes.NUMBER,
+    },
     title: {
       type: DataTypes.STRING,
       allowNull: false
@@ -178,3 +181,4 @@ export default Posts;
 // ADD COLUMN `reserved` TINYINT(1) NULL DEFAULT '0' AFTER `featured`,
 // ADD COLUMN `reservedExpiry` VARCHAR(45) NULL AFTER `reserved`,
 // ADD COLUMN `featuredExpiry` VARCHAR(45) NULL AFTER `reservedExpiry`;
+

@@ -51,6 +51,9 @@ import paymentRoutes from './routes/payment.js'
 import qrcodeRoutes from './routes/qrcode.js';
 import packagesRoutes from './routes/packages.js';
 import dashboardRoutes from './routes/dashboard.js';
+import reservedRoutes from "./routes/reserve.js"
+import ticketRouter from "./routes/ticket.js";
+import Ticket from './models/Ticket.js';
 
 app.use('/auth', authRoutes);
 app.use('/cate', categoriesRoutes);
@@ -65,6 +68,8 @@ app.use('/', paymentRoutes)
 app.use('/qrcode', qrcodeRoutes)
 app.use('/packages', packagesRoutes)
 app.use('/dashboard', dashboardRoutes)
+app.use('/reserve-post', reservedRoutes)
+app.use('/tickets', ticketRouter)
 
 Category.hasMany(Subcategory, {
   foreignKey: 'categoryId',
@@ -95,6 +100,9 @@ SubNestedSubcategory.belongsTo(NestedSubcategory, {
 
 User.hasMany(Rating, { foreignKey: 'userId', as: 'Rating' });
 Rating.belongsTo(User, { foreignKey: 'userId', as: 'User' });
+
+  User.hasMany(Ticket, { foreignKey: 'userId', as: 'Ticket' });
+  Ticket.belongsTo(User, { foreignKey: 'userId', as: 'User' });
 
 // Start server
 const PORT = 3000;

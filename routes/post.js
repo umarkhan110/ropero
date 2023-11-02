@@ -360,6 +360,7 @@ router.get("/get-all-post-by-admin", async (req, res) => {
         { model: Subcategory, as: "subcategory" },
         { model: NestedSubcategory, as: "nestedsubcategory" },
         { model: SubNestedSubcategory, as: "subnestedsubcategory" },
+        { model: User, as: "user", attributes: ["id", "username", "email"] },
       ],
       offset,
       limit: pageSize,
