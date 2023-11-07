@@ -13,8 +13,10 @@ const Ticket = sequelize.define("Ticket", {
     allowNull: false,
   }, 
   adminResponse: {
-    type: DataTypes.STRING,
-  }  
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  } 
+   
 });
 
 export default Ticket;

@@ -53,7 +53,9 @@ import packagesRoutes from './routes/packages.js';
 import dashboardRoutes from './routes/dashboard.js';
 import reservedRoutes from "./routes/reserve.js"
 import ticketRouter from "./routes/ticket.js";
+import couponRouter from "./routes/coupon.js"
 import Ticket from './models/Ticket.js';
+import Coupon from './models/Coupon.js';
 
 app.use('/auth', authRoutes);
 app.use('/cate', categoriesRoutes);
@@ -70,6 +72,7 @@ app.use('/packages', packagesRoutes)
 app.use('/dashboard', dashboardRoutes)
 app.use('/reserve-post', reservedRoutes)
 app.use('/tickets', ticketRouter)
+app.use('/coupons', couponRouter)
 
 Category.hasMany(Subcategory, {
   foreignKey: 'categoryId',

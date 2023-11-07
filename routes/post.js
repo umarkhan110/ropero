@@ -26,10 +26,10 @@ router.post(
   upload.array("images", 10),
   async (req, res) => {
     try {
-      console.log(req.user.credits);
       if(req.user.no_of_posts > 5){
         if (req.user.credits > 1) {
           // Prepare images for uploading to S3
+          console.log("req:", req.files)
           const images = req.files.map((file, index) => {
             return {
               imageData: file.buffer,
@@ -348,6 +348,7 @@ router.get("/get-all-post-by-admin", async (req, res) => {
         // Add more fields as needed
       ],
     };
+    const total = await Posts.count()
     const posts = await Posts.findAndCountAll({
       where: whereClause,
       include: [
@@ -402,7 +403,7 @@ router.get("/get-all-post-by-admin", async (req, res) => {
     });
 
     res.json({
-      total: posts.count,
+      total,
       page,
       pageSize,
       postsWithS3Urls,
