@@ -1,32 +1,47 @@
-// cronjobs.js
 import cron from 'node-cron';
-import { Op } from 'sequelize'; // Import Op for Sequelize operators
-import Posts from './models/Posts';
-
-// Define your cron job schedule
-// This example runs every hour at the 0th minute
-const cronSchedule = '0 * * * *';
-
-// Function to update featuredExpiry and reservedExpiry
-const updateExpiryFields = async () => {
+import Posts  from './models/Posts.js';
+import { Sequelize } from 'sequelize';
+// Define a cron schedule to run the task, e.g., every day at midnight
+cron.schedule('* * * * *', async () => {
   try {
-    // Update featured posts
-    await Posts.update(
-      { featuredExpiry: null }, // Set your logic for updating featuredExpiry here
-      { where: { featured: true, featuredExpiry: { [Op.lt]: new Date() } } }
-    );
+    const currentDateTime = new Date();
+    console.log(currentDateTime)
+    // Find featured posts with expired featuredExpiry dates
+    const expiredFeaturedPosts = await Posts.findAll({
+      where: {
+        featured: true,
+        featuredExpiry: {
+          [Sequelize.Op.lt]: currentDateTime,
+        },
+      },
+    });
 
-    // Update reserved posts
-    await Posts.update(
-      { reservedExpiry: null }, // Set your logic for updating reservedExpiry here
-      { where: { reserved: true, reservedExpiry: { [Op.lt]: new Date() } } }
-    );
+    // Update the featured status to false for expired posts
+    for (const post of expiredFeaturedPosts) {
+      post.featured = false;
+      await post.save();
+    }
 
-    console.log('Expiry fields updated successfully.');
+    const expiredReservedPosts = await Posts.findAll({
+      where: {
+        reserved: true,
+        reservedExpiry: {
+          [Sequelize.Op.lt]: currentDateTime,
+        },
+      },
+    });
+
+    // Update the featured status to false for expired posts
+    for (const post of expiredReservedPosts) {
+      post.reserved = false;
+      await post.save();
+    }
+
+    console.log('Featured posts with expired featuredExpiry updated.');
   } catch (error) {
-    console.error('Error updating expiry fields:', error);
+    console.error('Error updating featured posts:', error);
   }
-};
+});
 
-// Schedule the cron job
-cron.schedule(cronSchedule, updateExpiryFields);
+// Start the cron job
+// cron.start();

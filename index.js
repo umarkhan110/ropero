@@ -1,5 +1,6 @@
 // index.js
 import express from 'express';
+import "./cronjob.js"
 // const SequelizeStore = require('connect-session-sequelize')(session.Store);
 import { initializeApp } from "firebase/app";
 import sequelize from './config/database.js';
