@@ -462,6 +462,9 @@ router.get("/viewpost/:id", async (req, res) => {
       where: {
         "$nestedsubcategory.id$": postJson.nestedsubcategoryId,
         "$subnestedsubcategory.id$": postJson.subnestedsubcategoryId,
+        id: {
+          [Op.not]: post.id, // Exclude the current post by ID
+        },
       },
       include: [
         { model: Images, as: "images" },
@@ -479,6 +482,7 @@ router.get("/viewpost/:id", async (req, res) => {
           attributes: ["id", "username", "profileImage"],
         },
       ],
+
     });
 
     const postsresponse = posts.map((post) => {
@@ -639,6 +643,10 @@ router.put(
       await postExist.setColors(colorIds);
       await postExist.setMaterial(materialIds);
 
+      if(uploadedImages.length > 0){
+         // Remove previous images
+      await Images.destroy({ where: { postId: postExist.id } });
+      }
       // Create Images records and associate with the post
       for (const imageName of uploadedImages) {
         await Images.create({

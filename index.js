@@ -56,6 +56,8 @@ import ticketRouter from "./routes/ticket.js";
 import couponRouter from "./routes/coupon.js"
 import Ticket from './models/Ticket.js';
 import Coupon from './models/Coupon.js';
+import Posts from './models/Posts.js';
+import Wishlist from './models/Whislist.js';
 
 app.use('/auth', authRoutes);
 app.use('/cate', categoriesRoutes);
@@ -107,7 +109,9 @@ Rating.belongsTo(User, { foreignKey: 'userId', as: 'User' });
   User.hasMany(Ticket, { foreignKey: 'userId', as: 'Ticket' });
   Ticket.belongsTo(User, { foreignKey: 'userId', as: 'User' });
 
-// Start server
+  Posts.hasMany(Wishlist, { foreignKey: 'postId', as: 'wishlist', foreignKeyConstraint: true, hooks: true, onDelete: 'CASCADE' } );
+
+  // Start server
 const PORT = 3000;
 sequelize.sync().then(() => {
   app.listen(PORT, () => {

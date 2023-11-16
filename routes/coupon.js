@@ -18,7 +18,7 @@ router.post('/create-coupon', async (req, res) => {
     res.status(201).json(coupon);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'An error occurred while creating the coupon.' });
+    res.status(500).json({ error: error.errors[0].message });
   }
 });
 
@@ -141,10 +141,10 @@ router.put('/apply-coupon',checkUserAuthentication, async (req, res) => {
     });
 
     if (isUsed) {
-      res.json({ message: "Coupon is already used" });
+      res.status(400).json({ message: "Coupon is already used" });
     } else {
       if(coupon.limit <= coupon.timesUsed){
-       return res.json({ message: "Coupon limit is reached" });
+       return res.status(400 ).json({ message: "Coupon limit is reached" });
       } 
       
       coupon.timesUsed = coupon.timesUsed + 1;
