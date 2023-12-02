@@ -18,9 +18,9 @@ const QrCode = sequelize.define('QrCode', {
     allowNull: false,
     defaultValue: "Pending"
   },
-  // qr_code:{
-  //   type: DataTypes.BLOB,
-  // },
+  qr_code:{
+    type: DataTypes.BLOB,
+  },
   package_name: {
     type: DataTypes.STRING,
   },

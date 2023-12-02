@@ -234,8 +234,9 @@ router.post("/login", async (req, res) => {
     }
 
     if (passwordMatch) {
+      const TOKEN_EXPIRY_DAYS = 84600 / (24 * 60 * 60);
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.TOKEN_EXPIRY_DAYS,
+        expiresIn: `${TOKEN_EXPIRY_DAYS}d`,
       });
 
     user.fcm_token = fcm_token;
@@ -419,21 +420,46 @@ router.put('/update-user/:id', upload.single("profileImage"), async (req, res) =
 });
 
 // Route to disable a user by ID
-router.put('/disable-user/:id', async (req, res) => {
+router.put('/disapprove-user/:id', async (req, res) => {
   const userId = req.params.id;
 
   try {
     const user = await User.findByPk(userId);
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(401).json({ message: 'User not found' });
+    }
+    if(user.is_disabled == true){
+      return res.status(401).json({ message: 'User is already disapproved' });
     }
 
     // Set the user's is_disabled field to true
-    user.is_disabled = !user.is_disabled;
+    user.is_disabled = true;
     await user.save();
+    res.json({ message: 'User disapproved successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
 
-    res.json({ message: 'User disabled successfully' });
+router.put('/approve-user/:id', async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+    if(user.is_disabled == false){
+      return res.status(404).json({ message: 'User is already approved' });
+    }
+
+    // Set the user's is_disabled field to true
+    user.is_disabled = false;
+    await user.save();
+    res.json({ message: 'User approved successfully' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal Server Error' });

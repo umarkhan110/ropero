@@ -45,7 +45,10 @@ router.post("/subscribed", async (req, res) => {
           amount,
           credits
         });
-        qrCode.qr_code =qrRes.data.qr;
+        if (qrRes.data.qr) {
+          qrCode.qr_code = qrRes.data.qr;
+      }
+
         res.status(201).json(qrCode);
       }
     }
@@ -84,7 +87,7 @@ router.get("/qr-status/:id",checkUserAuthentication, async (req, res) => {
           },
         }
       ); 
-      // console.log(qrStatus)
+      console.log("qrStatus:", qrStatus)
       if(qrStatus.status === 200){
         // console.log("gjhjhg")
         const existingQrCode = await QrCode.findOne({
@@ -103,7 +106,7 @@ router.get("/qr-status/:id",checkUserAuthentication, async (req, res) => {
       }
     }
   } catch (error) {
-    // console.error(error);
+    console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -131,3 +134,7 @@ router.get('/get-all-subscription', async (req, res) => {
 
 
 export default router;
+
+
+// ALTER TABLE `ropero`.`QrCodes` 
+// ADD COLUMN `qr_code` BLOB NULL AFTER `credits`;

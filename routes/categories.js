@@ -6,6 +6,7 @@ import SubNestedSubcategory from '../models/SubNestedSubcategory.js';
 import Brand from '../models/Brand.js';
 import multer from "multer";
 import profileImageToS3 from '../factory/profileUpload.js';
+import Posts from '../models/Posts.js';
 
 const router = express.Router();
 
@@ -368,95 +369,163 @@ router.put('/isCategorized/:id',  async (req, res) => {
 });
 
 // Route to delete a category and its related entities
+// router.delete('/delete-categories/:id', async (req, res) => {
+//   const id = req.params.id;
+//   const { type } = req.body;
+//   try {
+//     // Find the main category by ID, including its related subcategories
+//     switch (type) {
+//       case 'category':
+//         const category = await Category.findByPk(id, {
+//           include: [
+//             {
+//               model: Subcategory,
+//               as: 'Subcategory',
+//               include: [
+//                 {
+//                   model: NestedSubcategory,
+//                   as: 'NestedSubcategory',
+//                   include: [
+//                     {
+//                       model: SubNestedSubcategory,
+//                       as: 'SubNestedSubcategory',
+//                     },
+//                   ],
+//                 },
+//               ],
+//             },
+//           ],
+//         });
+    
+//         if (!category) {
+//           return res.status(404).json({ message: 'Category not found' });
+//         }
+//         // Delete the main category and its related entities will be deleted due to associations
+//         await category.destroy({ cascade: true });
+    
+//         res.json({ message: 'Category and its related entities deleted successfully' });
+//         break;
+//       case 'subcategory':
+//         const subCategory = await Subcategory.findByPk(id, {
+//           include: [
+//             {
+//                   model: NestedSubcategory,
+//                   as: 'NestedSubcategory',
+//                   include: [
+//                     {
+//                       model: SubNestedSubcategory,
+//                       as: 'SubNestedSubcategory',
+//                     },
+//                   ],
+//                 },
+//               ],
+//         });
+    
+//         if (!subCategory) {
+//           return res.status(404).json({ message: 'SubCategory not found' });
+//         }
+//         // Delete the main subCategory and its related entities will be deleted due to associations
+//         await subCategory.destroy({ cascade: true });
+    
+//         res.json({ message: 'SubCategory and its related entities deleted successfully' });
+//         break;
+//       case 'nestedsubcategory':
+//         const nestedsubCategory = await NestedSubcategory.findByPk(id, {
+//           include: [
+//             {
+//               model: SubNestedSubcategory,
+//               as: 'SubNestedSubcategory',
+//             },
+//               ],
+//         });
+    
+//         if (!nestedsubCategory) {
+//           return res.status(404).json({ message: 'NestedsubCategory not found' });
+//         }
+//         // Delete the main nestedsubCategory and its related entities will be deleted due to associations
+//         await nestedsubCategory.destroy({ cascade: true });
+    
+//         res.json({ message: 'NestedsubCategory and its related entities deleted successfully' });
+//         break;
+//       case 'subnestedsubcategory':
+//         const subnestedsubCategory = await SubNestedSubcategory.findByPk(id);
+    
+//         if (!subnestedsubCategory) {
+//           return res.status(404).json({ message: 'NestedsubCategory not found' });
+//         }
+//         // Delete the main subnestedsubCategory and its related entities will be deleted due to associations
+//         await subnestedsubCategory.destroy({ cascade: true });
+    
+//         res.json({ message: 'SubnestedsubCategory deleted successfully' });
+//         break;
+//       default:
+//         res.status(400).json({ error: 'Invalid type specified in the request.' });
+//         break;
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'An error occurred while deleting the category and its related entities' });
+//   }
+// });
+
 router.delete('/delete-categories/:id', async (req, res) => {
   const id = req.params.id;
   const { type } = req.body;
+
   try {
-    // Find the main category by ID, including its related subcategories
     switch (type) {
       case 'category':
-        const category = await Category.findByPk(id, {
-          include: [
-            {
-              model: Subcategory,
-              as: 'Subcategory',
-              include: [
-                {
-                  model: NestedSubcategory,
-                  as: 'NestedSubcategory',
-                  include: [
-                    {
-                      model: SubNestedSubcategory,
-                      as: 'SubNestedSubcategory',
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
+        // Delete posts associated with the category
+        await Posts.destroy({
+          where: { categoryId: id },
         });
-    
-        if (!category) {
-          return res.status(404).json({ message: 'Category not found' });
-        }
-        // Delete the main category and its related entities will be deleted due to associations
-        await category.destroy({ cascade: true });
-    
+
+        // Delete the main category and its related entities
+        await Category.destroy({
+          where: { id: id },
+          cascade: true,
+        });
+
         res.json({ message: 'Category and its related entities deleted successfully' });
         break;
       case 'subcategory':
-        const subCategory = await Subcategory.findByPk(id, {
-          include: [
-            {
-                  model: NestedSubcategory,
-                  as: 'NestedSubcategory',
-                  include: [
-                    {
-                      model: SubNestedSubcategory,
-                      as: 'SubNestedSubcategory',
-                    },
-                  ],
-                },
-              ],
+        // Delete posts associated with the subcategory
+        await Posts.destroy({
+          where: { subcategoryId: id },
         });
-    
-        if (!subCategory) {
-          return res.status(404).json({ message: 'SubCategory not found' });
-        }
-        // Delete the main subCategory and its related entities will be deleted due to associations
-        await subCategory.destroy({ cascade: true });
-    
+
+        // Delete the main subCategory and its related entities
+        await Subcategory.destroy({
+          where: { id: id },
+          cascade: true,
+        });
+
         res.json({ message: 'SubCategory and its related entities deleted successfully' });
         break;
-      case 'nestedsubcategory':
-        const nestedsubCategory = await NestedSubcategory.findByPk(id, {
-          include: [
-            {
-              model: SubNestedSubcategory,
-              as: 'SubNestedSubcategory',
-            },
-              ],
-        });
-    
-        if (!nestedsubCategory) {
-          return res.status(404).json({ message: 'NestedsubCategory not found' });
-        }
-        // Delete the main nestedsubCategory and its related entities will be deleted due to associations
-        await nestedsubCategory.destroy({ cascade: true });
-    
-        res.json({ message: 'NestedsubCategory and its related entities deleted successfully' });
-        break;
-      case 'subnestedsubcategory':
-        const subnestedsubCategory = await SubNestedSubcategory.findByPk(id);
-    
-        if (!subnestedsubCategory) {
-          return res.status(404).json({ message: 'NestedsubCategory not found' });
-        }
-        // Delete the main subnestedsubCategory and its related entities will be deleted due to associations
-        await subnestedsubCategory.destroy({ cascade: true });
-    
-        res.json({ message: 'SubnestedsubCategory deleted successfully' });
-        break;
+        case 'nestedsubcategory':
+          // Delete posts associated with the category
+          await Posts.destroy({
+            where: { nestedsubcategoryId: id },
+          });
+          await NestedSubcategory.destroy({
+            where: { id: id },
+            cascade: true,
+          });
+  
+          res.json({ message: 'Category and its related entities deleted successfully' });
+          break;
+        case 'subnestedsubcategory':
+          await Posts.destroy({
+            where: { subnestedsubcategoryId: id },
+          });
+
+          await SubNestedSubcategory.destroy({
+            where: { id: id },
+            cascade: true,
+          });
+  
+          res.json({ message: 'SubCategory and its related entities deleted successfully' });
+          break;
       default:
         res.status(400).json({ error: 'Invalid type specified in the request.' });
         break;
@@ -466,6 +535,7 @@ router.delete('/delete-categories/:id', async (req, res) => {
     res.status(500).json({ error: 'An error occurred while deleting the category and its related entities' });
   }
 });
+
 
 // Create a new category
 // router.post('/categories', async (req, res) => {
