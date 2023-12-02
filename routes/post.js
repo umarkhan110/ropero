@@ -12,7 +12,7 @@ import SubNestedSubcategory from "../models/SubNestedSubcategory.js";
 import Size from "../models/Size.js";
 import Colors from "../models/Colors.js";
 import Material from "../models/Material.js";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import User from "../models/User.js";
 import checkUserAuthentication from "../middleware/authMiddleware.js";
 // Configure multer for file uploads
@@ -26,10 +26,10 @@ router.post(
   upload.array("images", 10),
   async (req, res) => {
     try {
-      if(req.user.no_of_posts > 5){
+      if (req.user.no_of_posts > 5) {
         if (req.user.credits > 1) {
           // Prepare images for uploading to S3
-          console.log("req:", req.files)
+          console.log("req:", req.files);
           const images = req.files.map((file, index) => {
             return {
               imageData: file.buffer,
@@ -38,7 +38,7 @@ router.post(
           });
           // Upload images to S3
           const uploadedImages = await uploadImagesToS3(images);
-  
+
           const {
             userId,
             title,
@@ -64,7 +64,7 @@ router.post(
             subcategoryId,
             nestedsubcategoryId,
             subnestedsubcategoryId,
-            address
+            address,
           } = req.body;
           // Check for missing required fields
           if (
@@ -79,21 +79,25 @@ router.post(
             !brandId ||
             !state
           ) {
-            return res.status(400).json({ error: "All fields must be filled." });
+            return res
+              .status(400)
+              .json({ error: "All fields must be filled." });
           }
-  
+
           // Check if no images were uploaded
           if (uploadedImages.length === 0) {
             return res
               .status(400)
               .json({ error: "At least one image is required." });
           }
-  
+
           // Check if colorId is provided before using split
           const colorIds = colorId ? colorId.split(",").map(Number) : [];
-  
-          const materialIds = materialId ? materialId.split(",").map(Number) : [];
-  
+
+          const materialIds = materialId
+            ? materialId.split(",").map(Number)
+            : [];
+
           const post = await Posts.create({
             userId,
             title,
@@ -119,13 +123,13 @@ router.post(
             subcategoryId,
             nestedsubcategoryId,
             subnestedsubcategoryId,
-            address
+            address,
           });
-  
+
           // Associate colors with the post
           await post.setColors(colorIds);
           await post.setMaterial(materialIds);
-  
+
           // Create Images records and associate with the post
           for (const imageName of uploadedImages) {
             await Images.create({
@@ -133,7 +137,7 @@ router.post(
               imageUrl: imageName,
             });
           }
-  
+
           const user = req.user;
           user.credits = user.credits - 2;
           user.no_of_posts = user.no_of_posts + 1;
@@ -142,117 +146,117 @@ router.post(
         } else {
           return res.status(400).json({ message: "You do not have credit" });
         }
-      }else{
-            // Prepare images for uploading to S3
-            const images = req.files.map((file, index) => {
-              return {
-                imageData: file.buffer,
-                fileName: file.originalname,
-              };
-            });
-            // Upload images to S3
-            const uploadedImages = await uploadImagesToS3(images);
-    
-            const {
-              userId,
-              title,
-              description,
-              price,
-              discount_price,
-              colorId,
-              sizeId,
-              materialId,
-              parcel_size,
-              brandId,
-              condition,
-              delivery_type,
-              shipping,
-              type,
-              lat,
-              lng,
-              city,
-              street,
-              floor,
-              state,
-              categoryId,
-              subcategoryId,
-              nestedsubcategoryId,
-              subnestedsubcategoryId,
-              address
-            } = req.body;
-            // Check for missing required fields
-            if (
-              !userId ||
-              !title ||
-              !price ||
-              !categoryId ||
-              !city ||
-              !street ||
-              !lat ||
-              !lng ||
-              !brandId ||
-              !state
-            ) {
-              return res.status(400).json({ error: "All fields must be filled." });
-            }
-    
-            // Check if no images were uploaded
-            if (uploadedImages.length === 0) {
-              return res
-                .status(400)
-                .json({ error: "At least one image is required." });
-            }
-    
-            // Check if colorId is provided before using split
-            const colorIds = colorId ? colorId.split(",").map(Number) : [];
-    
-            const materialIds = materialId ? materialId.split(",").map(Number) : [];
-    
-            const post = await Posts.create({
-              userId,
-              title,
-              description,
-              price,
-              discount_price,
-              colorId: colorIds,
-              sizeId,
-              materialId: materialIds,
-              parcel_size,
-              brandId,
-              condition,
-              delivery_type,
-              shipping,
-              type,
-              lat,
-              lng,
-              city,
-              street,
-              floor,
-              state,
-              categoryId,
-              subcategoryId,
-              nestedsubcategoryId,
-              subnestedsubcategoryId,
-              address
-            });
-    
-            // Associate colors with the post
-            await post.setColors(colorIds);
-            await post.setMaterial(materialIds);
-    
-            // Create Images records and associate with the post
-            for (const imageName of uploadedImages) {
-              await Images.create({
-                postId: post.id,
-                imageUrl: imageName,
-              });
-            }
-    
-            const user = req.user;
-            // user.credits = user.credits - 1;
-            user.no_of_posts = user.no_of_posts + 1;
-            await user.save();
-            res.status(201).json(post);
+      } else {
+        // Prepare images for uploading to S3
+        const images = req.files.map((file, index) => {
+          return {
+            imageData: file.buffer,
+            fileName: file.originalname,
+          };
+        });
+        // Upload images to S3
+        const uploadedImages = await uploadImagesToS3(images);
+
+        const {
+          userId,
+          title,
+          description,
+          price,
+          discount_price,
+          colorId,
+          sizeId,
+          materialId,
+          parcel_size,
+          brandId,
+          condition,
+          delivery_type,
+          shipping,
+          type,
+          lat,
+          lng,
+          city,
+          street,
+          floor,
+          state,
+          categoryId,
+          subcategoryId,
+          nestedsubcategoryId,
+          subnestedsubcategoryId,
+          address,
+        } = req.body;
+        // Check for missing required fields
+        if (
+          !userId ||
+          !title ||
+          !price ||
+          !categoryId ||
+          !city ||
+          !street ||
+          !lat ||
+          !lng ||
+          !brandId ||
+          !state
+        ) {
+          return res.status(400).json({ error: "All fields must be filled." });
+        }
+
+        // Check if no images were uploaded
+        if (uploadedImages.length === 0) {
+          return res
+            .status(400)
+            .json({ error: "At least one image is required." });
+        }
+
+        // Check if colorId is provided before using split
+        const colorIds = colorId ? colorId.split(",").map(Number) : [];
+
+        const materialIds = materialId ? materialId.split(",").map(Number) : [];
+
+        const post = await Posts.create({
+          userId,
+          title,
+          description,
+          price,
+          discount_price,
+          colorId: colorIds,
+          sizeId,
+          materialId: materialIds,
+          parcel_size,
+          brandId,
+          condition,
+          delivery_type,
+          shipping,
+          type,
+          lat,
+          lng,
+          city,
+          street,
+          floor,
+          state,
+          categoryId,
+          subcategoryId,
+          nestedsubcategoryId,
+          subnestedsubcategoryId,
+          address,
+        });
+
+        // Associate colors with the post
+        await post.setColors(colorIds);
+        await post.setMaterial(materialIds);
+
+        // Create Images records and associate with the post
+        for (const imageName of uploadedImages) {
+          await Images.create({
+            postId: post.id,
+            imageUrl: imageName,
+          });
+        }
+
+        const user = req.user;
+        // user.credits = user.credits - 1;
+        user.no_of_posts = user.no_of_posts + 1;
+        await user.save();
+        res.status(201).json(post);
       }
     } catch (error) {
       console.error(error);
@@ -352,7 +356,7 @@ router.get("/get-all-post-by-admin", async (req, res) => {
         // Add more fields as needed
       ],
     };
-    const total = await Posts.count()
+    const total = await Posts.count();
     const posts = await Posts.findAndCountAll({
       where: whereClause,
       include: [
@@ -486,7 +490,6 @@ router.get("/viewpost/:id", async (req, res) => {
           attributes: ["id", "username", "profileImage"],
         },
       ],
-
     });
 
     const postsresponse = posts.map((post) => {
@@ -546,140 +549,134 @@ router.get("/viewpost/:id", async (req, res) => {
 });
 
 // Update Post by Id
-router.put(
-  "/update-post/:id",
-  upload.array("images", 10),
-  async (req, res) => {
-    try {
-      // const user = req.user;
-      const postId = req.params.id;
-      const postExist = await Posts.findByPk(postId);
+router.put("/update-post/:id", upload.array("images", 10), async (req, res) => {
+  try {
+    // const user = req.user;
+    const postId = req.params.id;
+    const postExist = await Posts.findByPk(postId);
 
-      if (!postExist) {
-        return res.status(404).json({ error: "Post not found" });
-      }
-      // Prepare images for uploading to S3
-      const images = req?.files.map((file, index) => {
-        return {
-          imageData: file.buffer,
-          fileName: file.originalname,
-        };
-      });
-      // Upload images to S3
-      const uploadedImages = await uploadImagesToS3(images);
-
-      const {
-        title,
-        description,
-        price,
-        discount_price,
-        colorId,
-        sizeId,
-        materialId,
-        parcel_size,
-        brandId,
-        condition,
-        delivery_type,
-        shipping,
-        type,
-        lat,
-        lng,
-        city,
-        street,
-        floor,
-        state,
-        categoryId,
-        subcategoryId,
-        nestedsubcategoryId,
-        subnestedsubcategoryId,
-        address
-      } = req.body;
-
-      const colorIds = colorId
-        ? colorId.split(",").map(Number)
-        : postExist.colorId;
-
-      const materialIds = materialId
-        ? materialId.split(",").map(Number)
-        : postExist.materialId;
-
-      // const post = await  Posts.update({
-      // (postExist.userId = user.id),
-        (postExist.title = title ? title : postExist.title),
-        (postExist.address = address ? address : postExist.address),
-        (postExist.description = description
-          ? description
-          : postExist.description),
-        (postExist.price = price ? price : postExist.price),
-        (postExist.discount_price = discount_price
-          ? discount_price
-          : postExist.discount_price),
-        (postExist.colorId = colorIds),
-        (postExist.sizeId = sizeId ? sizeId : postExist.sizeId),
-        (postExist.materialId = materialIds),
-        (postExist.parcel_size = parcel_size
-          ? parcel_size
-          : postExist.parcel_size),
-        (postExist.brandId = brandId ? brandId : postExist.brandId),
-        (postExist.condition = condition ? condition : postExist.condition),
-        (postExist.delivery_type = delivery_type
-          ? delivery_type
-          : postExist.delivery_type),
-        (postExist.shipping = shipping ? shipping : postExist.shipping),
-        (postExist.type = type ? type : postExist.type),
-        (postExist.lat = lat ? lat : postExist.lat),
-        (postExist.lng = lng ? lng : postExist.lng),
-        (postExist.city = city ? city : postExist.city),
-        (postExist.street = street ? street : postExist.street),
-        (postExist.floor = floor ? floor : postExist.floor),
-        (postExist.state = state ? state : postExist.state),
-        (postExist.categoryId = categoryId ? categoryId : postExist.categoryId),
-        (postExist.subcategoryId = subcategoryId
-          ? subcategoryId
-          : postExist.subcategoryId),
-        (postExist.nestedsubcategoryId = nestedsubcategoryId
-          ? nestedsubcategoryId
-          : postExist.nestedsubcategoryId),
-        (postExist.subnestedsubcategoryId = subnestedsubcategoryId
-          ? subnestedsubcategoryId
-          : postExist.subnestedsubcategoryId);
-      //  });
-      await postExist.save();
-      // Associate colors with the post
-      await postExist.setColors(colorIds);
-      await postExist.setMaterial(materialIds);
-
-      if(uploadedImages.length > 0){
-         // Remove previous images
-      await Images.destroy({ where: { postId: postExist.id } });
-      }
-      // Create Images records and associate with the post
-      for (const imageName of uploadedImages) {
-        await Images.create({
-          postId: postId,
-          imageUrl: imageName,
-        });
-      }
-      return res.json({ postExist, message: "Post updated successfully" });
-    } catch (error) {
-      console.error(error);
-      res
-        .status(500)
-        .json({ error: "An error occurred while creating a post." });
+    if (!postExist) {
+      return res.status(404).json({ error: "Post not found" });
     }
+    // Prepare images for uploading to S3
+    const images = req?.files.map((file, index) => {
+      return {
+        imageData: file.buffer,
+        fileName: file.originalname,
+      };
+    });
+    // Upload images to S3
+    const uploadedImages = await uploadImagesToS3(images);
+
+    const {
+      title,
+      description,
+      price,
+      discount_price,
+      colorId,
+      sizeId,
+      materialId,
+      parcel_size,
+      brandId,
+      condition,
+      delivery_type,
+      shipping,
+      type,
+      lat,
+      lng,
+      city,
+      street,
+      floor,
+      state,
+      categoryId,
+      subcategoryId,
+      nestedsubcategoryId,
+      subnestedsubcategoryId,
+      address,
+      deletedImages,
+    } = req.body;
+
+    const colorIds = colorId
+      ? colorId.split(",").map(Number)
+      : postExist.colorId;
+
+    const materialIds = materialId
+      ? materialId.split(",").map(Number)
+      : postExist.materialId;
+
+    // const post = await  Posts.update({
+    // (postExist.userId = user.id),
+    (postExist.title = title ? title : postExist.title),
+      (postExist.address = address ? address : postExist.address),
+      (postExist.description = description
+        ? description
+        : postExist.description),
+      (postExist.price = price ? price : postExist.price),
+      (postExist.discount_price = discount_price
+        ? discount_price
+        : postExist.discount_price),
+      (postExist.colorId = colorIds),
+      (postExist.sizeId = sizeId ? sizeId : postExist.sizeId),
+      (postExist.materialId = materialIds),
+      (postExist.parcel_size = parcel_size
+        ? parcel_size
+        : postExist.parcel_size),
+      (postExist.brandId = brandId ? brandId : postExist.brandId),
+      (postExist.condition = condition ? condition : postExist.condition),
+      (postExist.delivery_type = delivery_type
+        ? delivery_type
+        : postExist.delivery_type),
+      (postExist.shipping = shipping ? shipping : postExist.shipping),
+      (postExist.type = type ? type : postExist.type),
+      (postExist.lat = lat ? lat : postExist.lat),
+      (postExist.lng = lng ? lng : postExist.lng),
+      (postExist.city = city ? city : postExist.city),
+      (postExist.street = street ? street : postExist.street),
+      (postExist.floor = floor ? floor : postExist.floor),
+      (postExist.state = state ? state : postExist.state),
+      (postExist.categoryId = categoryId ? categoryId : postExist.categoryId),
+      (postExist.subcategoryId = subcategoryId
+        ? subcategoryId
+        : postExist.subcategoryId),
+      (postExist.nestedsubcategoryId = nestedsubcategoryId
+        ? nestedsubcategoryId
+        : postExist.nestedsubcategoryId),
+      (postExist.subnestedsubcategoryId = subnestedsubcategoryId
+        ? subnestedsubcategoryId
+        : postExist.subnestedsubcategoryId);
+    //  });
+    await postExist.save();
+    // Associate colors with the post
+    await postExist.setColors(colorIds);
+    await postExist.setMaterial(materialIds);
+    const deletedImagesArray = deletedImages.split(",").map(Number);
+    if (Array.isArray(deletedImagesArray) && deletedImagesArray.length > 0) {
+      await Images.destroy({
+        where: {
+          postId: postExist.id,
+          id: { [Sequelize.Op.in]: deletedImagesArray },
+        },
+      });
+    }
+    // Create Images records and associate with the post
+    for (const imageName of uploadedImages) {
+      await Images.create({
+        postId: postId,
+        imageUrl: imageName,
+      });
+    }
+    return res.json({ postExist, message: "Post updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error });
   }
-);
+});
 
 // Feature Post by Id
-router.put(
-  "/feature-post/:id",
-  checkUserAuthentication,
-  async (req, res) => {
-    try {
-      const user = req.user;
-      if(user){
-
-
+router.put("/feature-post/:id", checkUserAuthentication, async (req, res) => {
+  try {
+    const user = req.user;
+    if (user) {
       if (req.user.credits < 5) {
         return res.status(404).json({ error: "You don't have enough credits" });
       }
@@ -695,66 +692,61 @@ router.put(
       }
 
       // Set the featuredExpiry date to one day from the current date
-    const oneDayInMilliseconds = 24 * 60 * 60 * 1000 * 14;
-    const currentDateTime = new Date();
-    const featuredExpiryDate = new Date(currentDateTime.getTime() + oneDayInMilliseconds);
-    postExist.featured = true;
-    postExist.featuredExpiry = featuredExpiryDate;
+      const oneDayInMilliseconds = 24 * 60 * 60 * 1000 * 14;
+      const currentDateTime = new Date();
+      const featuredExpiryDate = new Date(
+        currentDateTime.getTime() + oneDayInMilliseconds
+      );
+      postExist.featured = true;
+      postExist.featuredExpiry = featuredExpiryDate;
 
       await postExist.save();
       return res.json({ postExist, message: "Post featured successfully" });
     }
-    } catch (error) {
-      console.error(error);
-      res
-        .status(500)
-        .json({ error: "An error occurred while creating a post." });
-    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "An error occurred while creating a post." });
   }
-);
+});
 
 // Reserve a post by Id
-router.put(
-  "/reserve-post/:id",
-  checkUserAuthentication,
-  async (req, res) => {
-    try {
-      const user = req.user;
-      if (req.user.credits < 5) {
-        return res.status(404).json({ error: "You don't have enough credits" });
-      }
-      const postId = req.params.id;
-      const postExist = await Posts.findByPk(postId);
+router.put("/reserve-post/:id", checkUserAuthentication, async (req, res) => {
+  try {
+    const user = req.user;
+    if (req.user.credits < 5) {
+      return res.status(404).json({ error: "You don't have enough credits" });
+    }
+    const postId = req.params.id;
+    const postExist = await Posts.findByPk(postId);
 
-      if (!postExist) {
-        return res.status(404).json({ error: "Post not found" });
-      }
+    if (!postExist) {
+      return res.status(404).json({ error: "Post not found" });
+    }
 
-      if (postExist.reserved === true) {
-        return res.status(404).json({ error: "Post is already reserved" });
-      }
+    if (postExist.reserved === true) {
+      return res.status(404).json({ error: "Post is already reserved" });
+    }
 
-      // Set the reservedExpiry date to one day from the current date
+    // Set the reservedExpiry date to one day from the current date
     const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
     const currentDateTime = new Date();
-    const reservedExpiryDate = new Date(currentDateTime.getTime() + oneDayInMilliseconds);
+    const reservedExpiryDate = new Date(
+      currentDateTime.getTime() + oneDayInMilliseconds
+    );
 
     postExist.reserved = true;
     postExist.reservedExpiry = reservedExpiryDate;
 
-      await postExist.save();
-      return res.json({ postExist, message: "Post reserved successfully" });
-    } catch (error) {
-      console.error(error);
-      res
-        .status(500)
-        .json({ error: "An error occurred while creating a post." });
-    }
+    await postExist.save();
+    return res.json({ postExist, message: "Post reserved successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "An error occurred while creating a post." });
   }
-);
+});
 
 // Get all posts of user
-router.get('/users-posts', checkUserAuthentication, async (req, res) => {
+router.get("/users-posts", checkUserAuthentication, async (req, res) => {
   try {
     const userId = req.user.id;
     const filters = {};
@@ -818,12 +810,12 @@ router.get('/users-posts', checkUserAuthentication, async (req, res) => {
     res.json(postsWithS3Urls);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: "Server Error" });
   }
 });
 
 // Get all featured posts
-router.get('/featured-posts', checkUserAuthentication, async (req, res) => {
+router.get("/featured-posts", checkUserAuthentication, async (req, res) => {
   try {
     const userId = req.user.id;
     const filters = {};
@@ -889,12 +881,12 @@ router.get('/featured-posts', checkUserAuthentication, async (req, res) => {
     res.json(postsWithS3Urls);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: "Server Error" });
   }
 });
 
 // Get all reserved posts
-router.get('/reserved-posts', checkUserAuthentication, async (req, res) => {
+router.get("/reserved-posts", checkUserAuthentication, async (req, res) => {
   try {
     const userId = req.user.id;
     const filters = {};
@@ -960,10 +952,9 @@ router.get('/reserved-posts', checkUserAuthentication, async (req, res) => {
     res.json(postsWithS3Urls);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: "Server Error" });
   }
 });
-
 
 // Delete post by ID
 router.delete("/deletepost/:id", async (req, res) => {
