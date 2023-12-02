@@ -3,6 +3,7 @@ import QrCode from "../models/QrCode.js";
 import checkUserAuthentication from "../middleware/authMiddleware.js";
 import axios from "axios";
 import "dotenv/config";
+import User from "../models/User.js";
 const router = express.Router();
 
 // Create a new subscription
@@ -38,12 +39,13 @@ router.post("/subscribed", async (req, res) => {
         const qrCode = await QrCode.create({
           userId,
           packageId,
-          qr_code: qrRes.data.qr,
+          // qr_code: qrRes.data.qr,
           qrId: qrRes.data.id,
           package_name,
           amount,
           credits
         });
+        qrCode.qr_code =qrRes.data.qr;
         res.status(201).json(qrCode);
       }
     }
@@ -107,13 +109,23 @@ router.get("/qr-status/:id",checkUserAuthentication, async (req, res) => {
 });
 
 // Get all subscriptions
-router.get("/get-all-subscription", async (req, res) => {
+
+router.get('/get-all-subscription', async (req, res) => {
   try {
-    const subscriptions = await QrCode.findAll({where: {status: "Completed"}});
+    const subscriptions = await QrCode.findAll({
+      where: { status: 'Completed' },
+      include: [
+        {
+          model: User,
+          attributes: ['id', "username", "profileImage"],
+        },
+      ],
+    });
+
     res.json(subscriptions);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 

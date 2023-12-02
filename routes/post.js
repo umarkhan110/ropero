@@ -64,6 +64,7 @@ router.post(
             subcategoryId,
             nestedsubcategoryId,
             subnestedsubcategoryId,
+            address
           } = req.body;
           // Check for missing required fields
           if (
@@ -118,6 +119,7 @@ router.post(
             subcategoryId,
             nestedsubcategoryId,
             subnestedsubcategoryId,
+            address
           });
   
           // Associate colors with the post
@@ -176,6 +178,7 @@ router.post(
               subcategoryId,
               nestedsubcategoryId,
               subnestedsubcategoryId,
+              address
             } = req.body;
             // Check for missing required fields
             if (
@@ -230,6 +233,7 @@ router.post(
               subcategoryId,
               nestedsubcategoryId,
               subnestedsubcategoryId,
+              address
             });
     
             // Associate colors with the post
@@ -588,6 +592,7 @@ router.put(
         subcategoryId,
         nestedsubcategoryId,
         subnestedsubcategoryId,
+        address
       } = req.body;
 
       const colorIds = colorId
@@ -601,6 +606,7 @@ router.put(
       // const post = await  Posts.update({
       // (postExist.userId = user.id),
         (postExist.title = title ? title : postExist.title),
+        (postExist.address = address ? address : postExist.address),
         (postExist.description = description
           ? description
           : postExist.description),

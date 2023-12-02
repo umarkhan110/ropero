@@ -101,6 +101,9 @@ const Posts = sequelize.define("Posts", {
   state: {
     type: DataTypes.STRING,
   },
+  address: {
+    type: DataTypes.STRING,
+  },
   categoryId: {
     type: DataTypes.INTEGER,
     references: {
