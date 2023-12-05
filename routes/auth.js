@@ -9,8 +9,12 @@ import sgMail from "@sendgrid/mail";
 import profileImageToS3 from "../factory/profileUpload.js";
 import axios from "axios";
 import "dotenv/config";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
+import twilio from "twilio";
 sgMail.setApiKey(process.env.SG_MAIL);
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = twilio(accountSid, authToken);
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage(); // Store files in memory for further processing
@@ -68,7 +72,7 @@ router.post("/socialLogin", async (req, res) => {
       });
       user.fcm_token = fcm_token;
       await user.save();
-      const data = { token:token, user: user };
+      const data = { token: token, user: user };
 
       return res.status(200).json({ data, message: "User login successfully" });
     } else {
@@ -82,12 +86,16 @@ router.post("/socialLogin", async (req, res) => {
           isVerified: true,
           state: "",
           city: "",
-          address: ""
+          address: "",
         });
-        const token = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, {
-          expiresIn: process.env.TOKEN_EXPIRY_DAYS,
-        });
-        const data = { token:token, user: userData };
+        const token = jwt.sign(
+          { userId: userData.id },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: process.env.TOKEN_EXPIRY_DAYS,
+          }
+        );
+        const data = { token: token, user: userData };
         return res
           .status(200)
           .json({ data, message: "User login successfully" });
@@ -100,21 +108,46 @@ router.post("/socialLogin", async (req, res) => {
   }
 });
 
+async function isEmail(input) {
+  const emailRegex = /\S+@\S+\.\S+/;
+  return emailRegex.test(input);
+}
+
+async function isPhoneNumber(input) {
+  const phoneRegex = /^\d{10}$/;
+  return phoneRegex.test(input);
+}
+
 // Registration
 router.post("/register", upload.single("profileImage"), async (req, res) => {
   try {
+    let existingUser;
     const token = createToken();
-    const { username, email, password } = req.body;
-    const existingUser = await User.findOne({
-      where: {
-        [Op.or]: [{ username }, { email }],
-      },
-    });
+    const { username, emailOrPhone, password } = req.body;
+    const email = await isEmail(emailOrPhone);
+    const phone = await isPhoneNumber(emailOrPhone);
+    if (email) {
+      existingUser = await User.findOne({
+        where: {
+          [Op.or]: [{ email: emailOrPhone }],
+        },
+      });
+    } else if (phone) {
+      existingUser = await User.findOne({
+        where: {
+          [Op.or]: [{ phone: emailOrPhone }],
+        },
+      });
+    } else {
+      return res
+        .status(409)
+        .json({ error: "Email or Phone format is not correct" });
+    }
 
     if (existingUser) {
       return res
-        .status(400)
-        .json({ error: "Username or email is already in use." });
+        .status(409)
+        .json({ error: "Email or phone is already in use." });
     }
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -128,26 +161,40 @@ router.post("/register", upload.single("profileImage"), async (req, res) => {
       );
       profileImage = uploadResponse; // Store the S3 URL in the database
     }
-    const msg = {
-      to: email,
-      from: "elropero@elropero.app",
-      subject: "Email Verification Code",
-      text: "This is your email verification code",
-      html: `<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Email</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${token}">Staging Verify Email</a></strong>`,
-    };
-    sgMail.send(msg);
-    console.log(token);
+    if (email) {
+      const msg = {
+        to: emailOrPhone,
+        from: "elropero@elropero.app",
+        subject: "Email Verification Code",
+        text: "This is your email verification code",
+        html: `<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Email</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${token}">Staging Verify Email</a></strong>`,
+      };
+      sgMail.send(msg);
+      console.log(token);
+    } else if (phone) {
+      try {
+        const message = await client.messages.create({
+          body: `This is your verification code \n\n<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Email</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${token}">Staging Verify Email</a></strong>`,
+          messagingServiceSid: process.env.MESSAGING_SERVICE_ID,
+          to: `+92${emailOrPhone}`,
+        });
 
+        console.log(`Message sent successfully. SID: ${message.body}`);
+      } catch (error) {
+        console.error(`Error sending message: ${error.message}`);
+      }
+    }
     await User.create({
       username,
-      email,
+      email: email ? emailOrPhone : null,
+      phone: phone ? emailOrPhone : null,
       password: hashedPassword,
       token: token,
       profileImage: profileImage,
     });
-    res
-      .status(201)
-      .json({ message: "Please check your Email for account confirmation" });
+    res.status(201).json({
+      message: "Please check your Email or Phone for account confirmation",
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "An error occurred while registering." });
@@ -176,9 +223,20 @@ router.get("/verify/:token", async (req, res) => {
 
 //Resend Email Verification
 router.post("/resend-verification", async (req, res) => {
-  const { email } = req.body;
+  const { emailOrPhone } = req.body;
+  const email = await isEmail(emailOrPhone);
+  const phone = await isPhoneNumber(emailOrPhone);
   try {
-    const user = await User.findOne({ where: { email } });
+    let user;
+    if (email) {
+      user = await User.findOne({ where: { emailOrPhone } });
+    } else if (phone) {
+      user = await User.findOne({ where: { emailOrPhone } });
+    } else {
+      return res
+        .status(409)
+        .json({ error: "Email or Phone format is not correct" });
+    }
     if (!user) {
       return res.status(404).json({ error: "User not found." });
     }
@@ -191,15 +249,28 @@ router.post("/resend-verification", async (req, res) => {
     await user.save();
 
     // Send the verification email
-    const msg = {
-      to: email,
-      from: "elropero@elropero.app",
-      subject: "Email Verification Code",
-      text: "This is your email verification code",
-      html: `<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Code</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${token}">Staging Verify Code</strong>`,
-    };
-    sgMail.send(msg);
+    if (email) {
+      const msg = {
+        to: emailOrPhone,
+        from: "elropero@elropero.app",
+        subject: "Email Verification Code",
+        text: "This is your email verification code",
+        html: `<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Code</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${token}">Staging Verify Code</strong>`,
+      };
+      sgMail.send(msg);
+    } else if (phone) {
+      try {
+        const message = await client.messages.create({
+          body: `This is your verification code \n\n<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Email</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${token}">Staging Verify Email</a></strong>`,
+          messagingServiceSid: process.env.MESSAGING_SERVICE_ID,
+          to: `+92${emailOrPhone}`,
+        });
 
+        console.log(`Message sent successfully. SID: ${message.body}`);
+      } catch (error) {
+        console.error(`Error sending message: ${error.message}`);
+      }
+    }
     res.json({ message: "Verification email sent successfully." });
   } catch (error) {
     console.error(error);
@@ -212,9 +283,13 @@ router.post("/resend-verification", async (req, res) => {
 // Login
 router.post("/login", async (req, res) => {
   try {
-    const { email, password, fcm_token } = req.body;
-
-    const user = await User.findOne({ where: { email } });
+    const { emailOrPhone, password, fcm_token } = req.body;
+    let user;
+    if (await isEmail(emailOrPhone)) {
+      user = await User.findOne({ where: { email: emailOrPhone } });
+    } else if (await isPhoneNumber(emailOrPhone)) {
+      user = await User.findOne({ where: { phone: emailOrPhone } });
+    }
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials." });
     }
@@ -222,10 +297,10 @@ router.post("/login", async (req, res) => {
     if (user.is_disabled) {
       return res.status(403).json({ error: "Account is disabled" });
     }
-    
+
     const isVerified = user.isVerified;
     if (!isVerified) {
-      return res.status(401).json({ error: "Email is not verified." });
+      return res.status(401).json({ error: "Email or Phoneis not verified." });
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
@@ -239,27 +314,27 @@ router.post("/login", async (req, res) => {
         expiresIn: `${TOKEN_EXPIRY_DAYS}d`,
       });
 
-    user.fcm_token = fcm_token;
-    await user.save();
+      user.fcm_token = fcm_token;
+      await user.save();
 
-    res.json({
-      message: "Login successful.",
-      token: token,
-      user: {
-        id: user.id,
-        username: user.username,
-        profileImage: user.profileImage,
-        fcm_token: fcm_token,
-        address: user.address,
-        city:user.city,
-        state: user.state,
-        credits: user.credits,
-        no_of_posts: user.no_of_posts,
-        isVerified: user.isVerified,
-        provider: user.provider
-      },
-    });
-  }
+      res.json({
+        message: "Login successful.",
+        token: token,
+        user: {
+          id: user.id,
+          username: user.username,
+          profileImage: user.profileImage,
+          fcm_token: fcm_token,
+          address: user.address,
+          city: user.city,
+          state: user.state,
+          credits: user.credits,
+          no_of_posts: user.no_of_posts,
+          isVerified: user.isVerified,
+          provider: user.provider,
+        },
+      });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "An error occurred while logging in." });
@@ -342,7 +417,7 @@ router.post("/reset-password", async (req, res) => {
 });
 
 // Define a route to get all users
-router.get('/get-all-user', async (req, res) => {
+router.get("/get-all-user", async (req, res) => {
   try {
     let { page = 1, pageSize = 10, search } = req.query;
     // Ensure that pageSize is a numeric value
@@ -358,7 +433,16 @@ router.get('/get-all-user', async (req, res) => {
     };
     const users = await User.findAndCountAll({
       where: whereClause,
-      attributes: ['id', 'username', 'email', 'profileImage', 'isVerified', 'is_disabled', 'no_of_posts'],
+      attributes: [
+        "id",
+        "username",
+        "email",
+        "phone",
+        "profileImage",
+        "isVerified",
+        "is_disabled",
+        "no_of_posts",
+      ],
       offset,
       limit: pageSize,
     });
@@ -366,139 +450,150 @@ router.get('/get-all-user', async (req, res) => {
       total: users.count,
       page,
       pageSize,
-      users:users.rows
+      users: users.rows,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: "Server Error" });
   }
 });
 
 // Route to update user details
-router.put('/update-user/:id', upload.single("profileImage"), async (req, res) => {
-  const userId = req.params.id;
-  const { username, password, address, city, state } = req.body;
+router.put(
+  "/update-user/:id",
+  upload.single("profileImage"),
+  async (req, res) => {
+    const userId = req.params.id;
+    const { username, email, phone, password, address, city, state } = req.body;
 
-  try {
-    const user = await User.findByPk(userId);
+    try {
+      const user = await User.findByPk(userId);
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if the provider is null
+      // if (user.provider === null) {
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        let profileImage = user.profileImage;
+        if (req.file) {
+          const uploadResponse = await profileImageToS3(
+            req.file.buffer,
+            req.file.originalname
+          );
+          console.log(uploadResponse);
+          profileImage = uploadResponse; // Store the S3 URL in the database
+        }
+        // Update user details based on your conditions
+        user.username = username || user.username;
+        user.email = email || user?.email;
+        user.phone = phone || user?.phone;
+        user.password =
+          hashedPassword !== undefined ? hashedPassword : user.password;
+        user.profileImage = profileImage;
+        user.address = address;
+        user.city = city;
+        user.state = state;
+
+        await user.save();
+
+        return res.json({ message: "User details updated successfully" });
+      // } else {
+      //   return res
+      //     .status(403)
+      //     .json({ message: "Cannot update user details with provider set" });
+      // }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
-
-    // Check if the provider is null
-    if (user.provider === null) {
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
-      let profileImage = user.profileImage;
-    if (req.file) {
-      const uploadResponse = await profileImageToS3(
-        req.file.buffer,
-        req.file.originalname
-      );
-      console.log(uploadResponse)
-      profileImage = uploadResponse; // Store the S3 URL in the database
-    }
-      // Update user details based on your conditions
-      user.username = username || user.username;
-      user.password = hashedPassword !== undefined ? hashedPassword : user.password;
-      user.profileImage = profileImage;
-      user.address = address;
-      user.city = city;
-      user.state = state
-
-      await user.save();
-
-      return res.json({ message: 'User details updated successfully' });
-    } else {
-      return res.status(403).json({ message: 'Cannot update user details with provider set' });
-    }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
   }
-});
+);
 
 // Route to disable a user by ID
-router.put('/disapprove-user/:id', async (req, res) => {
+router.put("/disapprove-user/:id", async (req, res) => {
   const userId = req.params.id;
 
   try {
     const user = await User.findByPk(userId);
 
     if (!user) {
-      return res.status(401).json({ message: 'User not found' });
+      return res.status(401).json({ message: "User not found" });
     }
-    if(user.is_disabled == true){
-      return res.status(401).json({ message: 'User is already disapproved' });
+    if (user.is_disabled == true) {
+      return res.status(401).json({ message: "User is already disapproved" });
     }
 
     // Set the user's is_disabled field to true
     user.is_disabled = true;
     await user.save();
-    res.json({ message: 'User disapproved successfully' });
+    res.json({ message: "User disapproved successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-router.put('/approve-user/:id', async (req, res) => {
+router.put("/approve-user/:id", async (req, res) => {
   const userId = req.params.id;
 
   try {
     const user = await User.findByPk(userId);
 
     if (!user) {
-      return res.status(401).json({ message: 'User not found' });
+      return res.status(401).json({ message: "User not found" });
     }
-    if(user.is_disabled == false){
-      return res.status(404).json({ message: 'User is already approved' });
+    if (user.is_disabled == false) {
+      return res.status(404).json({ message: "User is already approved" });
     }
 
     // Set the user's is_disabled field to true
     user.is_disabled = false;
     await user.save();
-    res.json({ message: 'User approved successfully' });
+    res.json({ message: "User approved successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
 // Get User Detail by Id
-router.get('/user-detail/:id', async (req, res) => {
+router.get("/user-detail/:id", async (req, res) => {
   const userId = req.params.id;
 
   try {
     const user = await User.findByPk(userId);
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({ 
+    res.json({
       user: {
         id: user.id,
         username: user.username,
         profileImage: user.profileImage,
         email: user.email,
+        phone: user.phone,
         address: user.address,
-        city:user.city,
+        city: user.city,
         state: user.state,
         credits: user.credits,
         no_of_posts: user.no_of_posts,
         isVerified: user.isVerified,
         provider: user.provider,
-      } });
+      },
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
 // Delete user by ID
-router.delete("/deleteuser/:id", async (req, res) => {
+router.delete("/delete-user/:id", async (req, res) => {
   try {
     const userId = req.params.id;
     const user = await User.findByPk(userId);
@@ -545,6 +640,5 @@ router.post("/admin-login", async (req, res) => {
     res.status(500).json({ error: "An error occurred while logging in." });
   }
 });
-
 
 export default router;

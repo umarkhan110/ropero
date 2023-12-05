@@ -11,11 +11,14 @@ const User = sequelize.define("User", {
   username: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
+    // unique: true,
   },
   email: {
     type: DataTypes.STRING,
-    allowNull: false,
+    unique: true,
+  },
+  phone: {
+    type: DataTypes.STRING,
     unique: true,
   },
   password: {
@@ -64,3 +67,10 @@ const User = sequelize.define("User", {
 });
 
 export default User;
+
+
+// ALTER TABLE `ropero`.`Users` 
+// ADD COLUMN `phone` VARCHAR(45) NULL AFTER `no_of_posts`,
+// CHANGE COLUMN `email` `email` VARCHAR(255) NULL ,
+// ADD UNIQUE INDEX `phone_UNIQUE` (`phone` ASC) VISIBLE,
+// DROP INDEX `username` ;
