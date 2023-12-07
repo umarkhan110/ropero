@@ -174,7 +174,7 @@ router.post("/register", upload.single("profileImage"), async (req, res) => {
     } else if (phone) {
       try {
         const message = await client.messages.create({
-          body: `This is your verification code \n\n<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Email</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${token}">Staging Verify Email</a></strong>`,
+          body: `https://www.elropero.app/loading?token=${token}`,
           messagingServiceSid: process.env.MESSAGING_SERVICE_ID,
           to: `+92${emailOrPhone}`,
         });
@@ -229,9 +229,9 @@ router.post("/resend-verification", async (req, res) => {
   try {
     let user;
     if (email) {
-      user = await User.findOne({ where: { emailOrPhone } });
+      user = await User.findOne({ where: { email: emailOrPhone } });
     } else if (phone) {
-      user = await User.findOne({ where: { emailOrPhone } });
+      user = await User.findOne({ where: { phone: emailOrPhone } });
     } else {
       return res
         .status(409)
@@ -261,7 +261,7 @@ router.post("/resend-verification", async (req, res) => {
     } else if (phone) {
       try {
         const message = await client.messages.create({
-          body: `This is your verification code \n\n<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Email</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${token}">Staging Verify Email</a></strong>`,
+          body: `https://www.elropero.app/loading?token=${token}`,
           messagingServiceSid: process.env.MESSAGING_SERVICE_ID,
           to: `+92${emailOrPhone}`,
         });
@@ -349,30 +349,54 @@ router.post("/logout", (req, res) => {
 
 // Request reset password
 router.post("/reset-password-request", async (req, res) => {
+  const { emailOrPhone } = req.body;
+  const email = await isEmail(emailOrPhone);
+  const phone = await isPhoneNumber(emailOrPhone);
   try {
-    const { email } = req.body;
+    let user;
+    if (email) {
+      user = await User.findOne({ where: { email: emailOrPhone } });
+    } else if (phone) {
+      user = await User.findOne({ where: { phone: emailOrPhone } });
+    } else {
+      return res
+        .status(409)
+        .json({ error: "Email or Phone format is not correct" });
+    }
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
 
     const resetToken = crypto.randomBytes(20).toString("hex");
-    // Update the user's reset token in the database
-    const user = await User.findOne({ where: { email } });
-    if (user) {
-      user.resetToken = resetToken;
-      await user.save();
-
+    console.log(resetToken);
+    user.resetToken = resetToken;
+    await user.save();
+    if (email) {
       const msg = {
-        to: email,
+        to: emailOrPhone,
         from: "elropero@elropero.app",
-        subject: "Reset Link",
-        text: "This is your password reset code",
+        subject: "Email Verification Code",
+        text: "This is your email verification code",
         html: `<strong><a href="https://www.elropero.app/reset-password?token=${resetToken}">Password Reset Code</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${resetToken}">Staging Password Reset Code</strong>`,
       };
       sgMail.send(msg);
-      return res
-        .status(200)
-        .json({ error: "Reset token is sent to your provided email." });
-    } else {
-      return res.status(401).json({ error: "This email is not registered." });
+    } else if (phone) {
+      try {
+        const message = await client.messages.create({
+          body: `https://www.elropero.app/loading?token=${resetToken}`,
+          messagingServiceSid: process.env.MESSAGING_SERVICE_ID,
+          to: `+92${emailOrPhone}`,
+        });
+
+        console.log(`Message sent successfully. SID: ${message.body}`);
+      } catch (error) {
+        console.error(`Error sending message: ${error.message}`);
+      }
     }
+
+    return res
+      .status(200)
+      .json({ error: "Reset token is sent to your provided email." });
   } catch (error) {
     console.error(error);
     res
@@ -465,46 +489,54 @@ router.put(
   async (req, res) => {
     const userId = req.params.id;
     const { username, email, phone, password, address, city, state } = req.body;
-
     try {
       const user = await User.findByPk(userId);
-
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
-      // Check if the provider is null
-      // if (user.provider === null) {
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
+      if (user.provider === null) {
+        let hashedPassword;
+        if (password) {
+          const saltRounds = 10;
+          hashedPassword = await bcrypt.hash(password, saltRounds);
+        }
         let profileImage = user.profileImage;
         if (req.file) {
           const uploadResponse = await profileImageToS3(
             req.file.buffer,
             req.file.originalname
           );
-          console.log(uploadResponse);
-          profileImage = uploadResponse; // Store the S3 URL in the database
+          profileImage = uploadResponse;
         }
-        // Update user details based on your conditions
         user.username = username || user.username;
         user.email = email || user?.email;
         user.phone = phone || user?.phone;
         user.password =
           hashedPassword !== undefined ? hashedPassword : user.password;
         user.profileImage = profileImage;
-        user.address = address;
-        user.city = city;
-        user.state = state;
+        user.address = address || user?.address;
+        user.city = city || user?.city;
+        user.state = state || user?.state;
+        await user.save();
+        return res.json({ message: "User details updated successfully" });
+      } else {
+        let profileImage = user?.profileImage;
+        if (req.file) {
+          const uploadResponse = await profileImageToS3(
+            req.file.buffer,
+            req.file.originalname
+          );
+          profileImage = uploadResponse;
+        }
+        user.username = username || user?.username;
+        user.profileImage = profileImage || user?.profileImage;
+        user.address = address || user?.address;
+        user.city = city || user?.city;
+        user.state = state || user?.state;
 
         await user.save();
-
         return res.json({ message: "User details updated successfully" });
-      // } else {
-      //   return res
-      //     .status(403)
-      //     .json({ message: "Cannot update user details with provider set" });
-      // }
+      }
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Internal Server Error" });

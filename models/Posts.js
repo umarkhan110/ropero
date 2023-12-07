@@ -199,3 +199,42 @@ Material.belongsToMany(Posts, {
 });
 
 export default Posts;
+
+
+// CREATE TABLE `ropero`.`Posts` (
+//   `id` INT NOT NULL AUTO_INCREMENT,
+//   `title` VARCHAR(255) NULL,
+//   `description` VARCHAR(255) NULL DEFAULT NULL,
+//   `price` INT NOT NULL,
+//   `type` VARCHAR(45) NULL DEFAULT NULL,
+//   `city` VARCHAR(45) NULL,
+//   `sizeId` INT NULL DEFAULT NULL,
+//   `parcel_size` VARCHAR(255) NULL DEFAULT NULL,
+//   `brandId` INT NOT NULL,
+//   `condition` VARCHAR(45) NULL DEFAULT NULL,
+//   `delivery_type` VARCHAR(45) NULL DEFAULT NULL,
+//   `shipping` TINYINT(1) NULL DEFAULT NULL,
+//   `lat` VARCHAR(45) NULL DEFAULT NULL,
+//   `lng` VARCHAR(45) NULL,
+//   `street` VARCHAR(45) NULL,
+//   `floor` VARCHAR(45) NULL,
+//   `state` VARCHAR(45) NULL,
+//   `categoryId` INT NOT NULL,
+//   `subcategoryId` INT NULL,
+//   `nestedsubcategoryId` INT NOT NULL,
+//   `subnestedsubcategoryId` INT NOT NULL,
+//   `userId` INT NOT NULL,
+//   `views` INT NULL DEFAULT '0',
+//   `is_Approved` TINYINT(1) NOT NULL,
+//   `createdAt` DATETIME NOT NULL,
+//   `updatedAt` DATETIME NOT NULL,
+//   `discount_price` VARCHAR(45) NULL,
+//   `featured` TINYINT(1) NULL DEFAULT '0',
+//   `reserved` TINYINT(1) NULL DEFAULT '0',
+//   `address` VARCHAR(45) NULL,
+//   `featuredExpiry` VARCHAR(45) NULL,
+//   `reservedUserId` INT NULL,
+//   `reservedExpiry` VARCHAR(45) NULL,
+//   PRIMARY KEY (`id`))
+// ENGINE = InnoDB
+// DEFAULT CHARACTER SET = utf8mb4;
