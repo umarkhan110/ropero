@@ -57,6 +57,7 @@ const Posts = sequelize.define("Posts", {
       model: Size,
       key: "id",
     },
+    allowNull: true,
   },
   parcel_size: {
     type: DataTypes.STRING,
@@ -118,6 +119,7 @@ const Posts = sequelize.define("Posts", {
       model: Subcategory,
       key: "id",
     },
+    allowNull: false,
   },
   nestedsubcategoryId: {
     type: DataTypes.INTEGER,
@@ -125,7 +127,7 @@ const Posts = sequelize.define("Posts", {
       model: NestedSubcategory,
       key: "id",
     },
-    allowNull: false,
+    defaultValue: null,
   },
   subnestedsubcategoryId: {
     type: DataTypes.INTEGER,
@@ -133,7 +135,7 @@ const Posts = sequelize.define("Posts", {
       model: SubNestedSubcategory,
       key: "id",
     },
-    allowNull: false,
+    defaultValue: null,
   },
   userId: {
     type: DataTypes.INTEGER,
@@ -144,9 +146,8 @@ const Posts = sequelize.define("Posts", {
     allowNull: false,
   },
   views: {
-    // Add the 'views' field
     type: DataTypes.INTEGER,
-    defaultValue: 0, // Set the default value to 0
+    defaultValue: 0,
   },
   is_Approved: {
     type: DataTypes.BOOLEAN,
@@ -155,9 +156,7 @@ const Posts = sequelize.define("Posts", {
   },
 });
 
-// Create an association with the Images table
 Posts.hasMany(Images, { foreignKey: "postId", as: "images" });
-// Establish the association between Posts and Brand
 Posts.belongsTo(Brand, { foreignKey: "brandId", as: "brand" });
 Posts.belongsTo(Size, { foreignKey: "sizeId", as: "size" });
 Posts.belongsTo(Category, { foreignKey: "categoryId", as: "category" });
@@ -174,8 +173,6 @@ Posts.belongsTo(SubNestedSubcategory, {
   as: "subnestedsubcategory",
 });
 Posts.belongsTo(User, { foreignKey: "userId", as: "user" });
-
-// Define the many-to-many association between Posts and Colors
 Posts.belongsToMany(Colors, {
   through: "PostColors",
   as: "colors",
@@ -238,3 +235,42 @@ export default Posts;
 //   PRIMARY KEY (`id`))
 // ENGINE = InnoDB
 // DEFAULT CHARACTER SET = utf8mb4;
+
+
+// ALTER TABLE `ropero`.`Posts` 
+// CHANGE COLUMN `type` `type` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `city` `city` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `condition` `condition` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `delivery_type` `delivery_type` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `lat` `lat` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `lng` `lng` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `street` `street` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `floor` `floor` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `state` `state` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `discount_price` `discount_price` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `address` `address` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `featuredExpiry` `featuredExpiry` VARCHAR(255) NULL DEFAULT NULL ,
+// CHANGE COLUMN `reservedExpiry` `reservedExpiry` VARCHAR(255) NULL DEFAULT NULL ;
+
+
+// ALTER TABLE `ropero`.`Posts` 
+// DROP FOREIGN KEY `posts_ibfk_4`,
+// DROP FOREIGN KEY `posts_ibfk_5`,
+// DROP FOREIGN KEY `posts_ibfk_6`;
+// ALTER TABLE `ropero`.`Posts` 
+// CHANGE COLUMN `subcategoryId` `subcategoryId` INT NOT NULL ,
+// CHANGE COLUMN `nestedsubcategoryId` `nestedsubcategoryId` INT NULL ,
+// CHANGE COLUMN `subnestedsubcategoryId` `subnestedsubcategoryId` INT NULL ;
+// ALTER TABLE `ropero`.`Posts` 
+// ADD CONSTRAINT `posts_ibfk_4`
+//   FOREIGN KEY (`subcategoryId`)
+//   REFERENCES `ropero`.`Subcategories` (`id`)
+//   ON UPDATE CASCADE,
+// ADD CONSTRAINT `posts_ibfk_5`
+//   FOREIGN KEY (`nestedsubcategoryId`)
+//   REFERENCES `ropero`.`NestedSubcategories` (`id`)
+//   ON UPDATE CASCADE,
+// ADD CONSTRAINT `posts_ibfk_6`
+//   FOREIGN KEY (`subnestedsubcategoryId`)
+//   REFERENCES `ropero`.`SubNestedSubcategories` (`id`)
+//   ON UPDATE CASCADE;

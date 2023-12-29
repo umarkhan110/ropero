@@ -15,8 +15,7 @@ import Material from "../models/Material.js";
 import { Op, Sequelize } from "sequelize";
 import User from "../models/User.js";
 import checkUserAuthentication from "../middleware/authMiddleware.js";
-// Configure multer for file uploads
-const storage = multer.memoryStorage(); // Store files in memory for further processing
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Create a new post
@@ -28,15 +27,12 @@ router.post(
     try {
       if (req.user.no_of_posts > 5) {
         if (req.user.credits > 1) {
-          // Prepare images for uploading to S3
-          console.log("req:", req.files);
           const images = req.files.map((file, index) => {
             return {
               imageData: file.buffer,
               fileName: file.originalname,
             };
           });
-          // Upload images to S3
           const uploadedImages = await uploadImagesToS3(images);
 
           const {
@@ -66,34 +62,23 @@ router.post(
             subnestedsubcategoryId,
             address,
           } = req.body;
-          // Check for missing required fields
-          if (
-            !userId ||
-            !title ||
-            !price ||
-            !categoryId ||
-            !city ||
-            !street ||
-            !lat ||
-            !lng ||
-            !brandId ||
-            !state
-          ) {
+          console.log(req.body.nestedsubcategoryId);
+          if (!userId || !title || !price || !categoryId || !brandId) {
             return res
-              .status(400)
+              .status(409)
               .json({ error: "All fields must be filled." });
           }
-
-          // Check if no images were uploaded
           if (uploadedImages.length === 0) {
             return res
-              .status(400)
+              .status(409)
               .json({ error: "At least one image is required." });
           }
+          const optionalFields = {
+            nestedsubcategoryId: nestedsubcategoryId || null,
+            subnestedsubcategoryId: subnestedsubcategoryId || null,
+          };
 
-          // Check if colorId is provided before using split
           const colorIds = colorId ? colorId.split(",").map(Number) : [];
-
           const materialIds = materialId
             ? materialId.split(",").map(Number)
             : [];
@@ -121,16 +106,11 @@ router.post(
             state,
             categoryId,
             subcategoryId,
-            nestedsubcategoryId,
-            subnestedsubcategoryId,
+            ...optionalFields,
             address,
           });
-
-          // Associate colors with the post
           await post.setColors(colorIds);
           await post.setMaterial(materialIds);
-
-          // Create Images records and associate with the post
           for (const imageName of uploadedImages) {
             await Images.create({
               postId: post.id,
@@ -144,17 +124,15 @@ router.post(
           await user.save();
           res.status(201).json(post);
         } else {
-          return res.status(400).json({ message: "You do not have credit" });
+          return res.status(409).json({ message: "You do not have credit" });
         }
       } else {
-        // Prepare images for uploading to S3
         const images = req.files.map((file, index) => {
           return {
             imageData: file.buffer,
             fileName: file.originalname,
           };
         });
-        // Upload images to S3
         const uploadedImages = await uploadImagesToS3(images);
 
         const {
@@ -184,34 +162,22 @@ router.post(
           subnestedsubcategoryId,
           address,
         } = req.body;
-        // Check for missing required fields
-        if (
-          !userId ||
-          !title ||
-          !price ||
-          !categoryId ||
-          !city ||
-          !street ||
-          !lat ||
-          !lng ||
-          !brandId ||
-          !state
-        ) {
-          return res.status(400).json({ error: "All fields must be filled." });
+        console.log(req.body.nestedsubcategoryId);
+        if (!userId || !title || !price || !categoryId || !brandId) {
+          return res.status(409).json({ error: "All fields must be filled." });
         }
-
-        // Check if no images were uploaded
         if (uploadedImages.length === 0) {
           return res
-            .status(400)
+            .status(409)
             .json({ error: "At least one image is required." });
         }
+        const optionalFields = {
+          nestedsubcategoryId: nestedsubcategoryId || null,
+          subnestedsubcategoryId: subnestedsubcategoryId || null,
+        };
 
-        // Check if colorId is provided before using split
         const colorIds = colorId ? colorId.split(",").map(Number) : [];
-
         const materialIds = materialId ? materialId.split(",").map(Number) : [];
-
         const post = await Posts.create({
           userId,
           title,
@@ -235,16 +201,11 @@ router.post(
           state,
           categoryId,
           subcategoryId,
-          nestedsubcategoryId,
-          subnestedsubcategoryId,
+          ...optionalFields,
           address,
         });
-
-        // Associate colors with the post
         await post.setColors(colorIds);
         await post.setMaterial(materialIds);
-
-        // Create Images records and associate with the post
         for (const imageName of uploadedImages) {
           await Images.create({
             postId: post.id,
@@ -253,16 +214,13 @@ router.post(
         }
 
         const user = req.user;
-        // user.credits = user.credits - 1;
         user.no_of_posts = user.no_of_posts + 1;
         await user.save();
         res.status(201).json(post);
       }
     } catch (error) {
-      console.error(error);
-      res
-        .status(500)
-        .json({ error: "An error occurred while creating a post." });
+      console.log(error);
+      res.status(400).json({ error: error?.parent?.sqlMessage });
     }
   }
 );
@@ -296,32 +254,26 @@ router.get("/post", async (req, res) => {
         },
       ],
     });
-
-    // Map the posts to add S3 URLs to each image
     const postsWithS3Urls = posts.map((post) => {
       const postJson = post.toJSON();
-      // postJson.images = postJson.images.map((image) => {
-      //   return {
-      //     ...image,
-      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      //   };
-      // });
-      const colors = postJson.colors.map((color) => ({
-        id: color.id,
-        name: color.name,
-      }));
-      const materials = postJson.material.map((material) => ({
-        id: material.id,
-        name: material.name,
-      }));
+      const colors =
+        postJson.colors.map((color) => ({
+          id: color.id,
+          name: color.name,
+        })) || [];
+      const materials =
+        postJson.material.map((material) => ({
+          id: material.id,
+          name: material.name,
+        })) || [];
       return {
         ...postJson,
-        brandName: postJson.brand.name,
-        categoryName: postJson.category.name,
-        subcategoryName: postJson.subcategory.name,
-        nestedsubcategoryName: postJson.nestedsubcategory.name,
-        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
-        brand: undefined, // Add brand name to the response
+        brandName: postJson.brand?.name || null,
+        categoryName: postJson.category?.name || null,
+        subcategoryName: postJson.subcategory?.name || null,
+        nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+        subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
+        brand: undefined,
         colors: colors,
         material: materials,
         category: undefined,
@@ -329,9 +281,7 @@ router.get("/post", async (req, res) => {
         nestedsubcategory: undefined,
         subnestedsubcategory: undefined,
       };
-      // return postJson;
     });
-
     res.json(postsWithS3Urls);
   } catch (error) {
     console.error(error);
@@ -343,20 +293,12 @@ router.get("/post", async (req, res) => {
 router.get("/get-all-post-by-admin", async (req, res) => {
   try {
     let { page = 1, pageSize = 10, search } = req.query;
-
-    // Ensure that pageSize is a numeric value
     pageSize = parseInt(pageSize, 10);
-
     const offset = (page - 1) * pageSize;
     const whereClause = {
-      // Add search functionality
-      [Op.or]: [
-        // Customize this list to include relevant fields you want to search in
-        { title: { [Op.like]: `%${search}%` } },
-        // Add more fields as needed
-      ],
+      [Op.or]: [{ title: { [Op.like]: `%${search}%` } }],
     };
-    const total = await Posts.count();
+    const total = await Posts.count({ where: whereClause });
     const posts = await Posts.findAndCountAll({
       where: whereClause,
       include: [
@@ -374,40 +316,33 @@ router.get("/get-all-post-by-admin", async (req, res) => {
       offset,
       limit: pageSize,
     });
-
-    // Map the posts to add S3 URLs to each image
     const postsWithS3Urls = posts.rows.map((post) => {
       const postJson = post.toJSON();
-      // postJson.images = postJson.images.map((image) => {
-      //   return {
-      //     ...image,
-      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      //   };
-      // });
-      const colors = postJson.colors.map((color) => ({
-        id: color.id,
-        name: color.name,
-      }));
-      const materials = postJson.material.map((material) => ({
-        id: material.id,
-        name: material.name,
-      }));
+      const colors =
+        postJson.colors?.map((color) => ({
+          id: color.id,
+          name: color.name,
+        })) || [];
+      const materials =
+        postJson.material?.map((material) => ({
+          id: material.id,
+          name: material.name,
+        })) || [];
       return {
         ...postJson,
-        brandName: postJson.brand.name,
-        categoryName: postJson.category.name,
-        subcategoryName: postJson.subcategory.name,
-        nestedsubcategoryName: postJson.nestedsubcategory.name,
-        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
-        brand: undefined, // Add brand name to the response
-        colors: colors,
+        brandName: postJson.brand?.name || null,
+        categoryName: postJson.category?.name || null,
+        subcategoryName: postJson.subcategory?.name || null,
+        nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+        subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
+        brand: undefined,
+        colors,
         material: materials,
         category: undefined,
         subcategory: undefined,
         nestedsubcategory: undefined,
         subnestedsubcategory: undefined,
       };
-      // return postJson;
     });
 
     res.json({
@@ -451,12 +386,6 @@ router.get("/viewpost/:id", async (req, res) => {
     post.views += 1;
     await post.save();
     const postJson = post.toJSON();
-    // postJson.images = postJson.images.map((image) => {
-    //   return {
-    //     ...image,
-    //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-    //   };
-    // });
     const colors = postJson.colors.map((color) => ({
       id: color.id,
       name: color.name,
@@ -471,7 +400,7 @@ router.get("/viewpost/:id", async (req, res) => {
         "$nestedsubcategory.id$": postJson.nestedsubcategoryId,
         "$subnestedsubcategory.id$": postJson.subnestedsubcategoryId,
         id: {
-          [Op.not]: post.id, // Exclude the current post by ID
+          [Op.not]: post.id,
         },
       },
       include: [
@@ -494,27 +423,24 @@ router.get("/viewpost/:id", async (req, res) => {
 
     const postsresponse = posts.map((post) => {
       const postJson = post.toJSON();
-      // postJson.images = postJson.images.map((image) => ({
-      //   ...image,
-      //   imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      // }));
-      const colors = postJson.colors.map((color) => ({
-        id: color.id,
-        name: color.name,
-      }));
-      const materials = postJson.material.map((material) => ({
-        id: material.id,
-        name: material.name,
-      }));
-
+      const colors =
+        postJson.colors.map((color) => ({
+          id: color.id,
+          name: color.name,
+        })) || [];
+      const materials =
+        postJson.material.map((material) => ({
+          id: material.id,
+          name: material.name,
+        })) || [];
       return {
         ...postJson,
-        brandName: postJson.brand.name,
-        categoryName: postJson.category.name,
-        subcategoryName: postJson.subcategory.name,
-        nestedsubcategoryName: postJson.nestedsubcategory.name,
-        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
-        brand: undefined, // Add brand name to the response
+        brandName: postJson.brand?.name || null,
+        categoryName: postJson.category?.name || null,
+        subcategoryName: postJson.subcategory?.name || null,
+        nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+        subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
+        brand: undefined,
         colors,
         material: materials,
         category: undefined,
@@ -526,12 +452,12 @@ router.get("/viewpost/:id", async (req, res) => {
 
     const response = {
       ...postJson,
-      brandName: postJson.brand.name,
-      categoryName: postJson.category.name,
-      subcategoryName: postJson.subcategory.name,
-      nestedsubcategoryName: postJson.nestedsubcategory.name,
-      subnestedsubcategoryName: postJson.subnestedsubcategory.name,
-      brand: undefined, // Add brand name to the response
+      brandName: postJson.brand?.name || null,
+      categoryName: postJson.category?.name || null,
+      subcategoryName: postJson.subcategory?.name || null,
+      nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+      subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
+      brand: undefined,
       colors: colors,
       material: materials,
       category: undefined,
@@ -551,21 +477,26 @@ router.get("/viewpost/:id", async (req, res) => {
 // Update Post by Id
 router.put("/update-post/:id", upload.array("images", 10), async (req, res) => {
   try {
-    // const user = req.user;
     const postId = req.params.id;
-    const postExist = await Posts.findByPk(postId);
-
+    const postExist = await Posts.findByPk(postId, {
+      include: [
+        { model: Colors, as: "colors", attributes: ["id", "name"] },
+        { model: Material, as: "material", attributes: ["id", "name"] },
+      ],
+    });
+    const colors = postExist?.colors.map((color) => [color.id]);
+    const materials = postExist?.material.map((material) => [material.id]);
+    console.log(materials);
     if (!postExist) {
       return res.status(404).json({ error: "Post not found" });
     }
-    // Prepare images for uploading to S3
-    const images = req?.files.map((file, index) => {
-      return {
+
+    const images =
+      req.files?.map((file) => ({
         imageData: file.buffer,
         fileName: file.originalname,
-      };
-    });
-    // Upload images to S3
+      })) || [];
+
     const uploadedImages = await uploadImagesToS3(images);
 
     const {
@@ -596,60 +527,45 @@ router.put("/update-post/:id", upload.array("images", 10), async (req, res) => {
       deletedImages,
     } = req.body;
 
-    const colorIds = colorId
-      ? colorId.split(",").map(Number)
-      : postExist.colorId;
-
+    const colorIds = colorId ? colorId.split(",").map(Number) : colors || [];
     const materialIds = materialId
       ? materialId.split(",").map(Number)
-      : postExist.materialId;
+      : materials || [];
 
-    // const post = await  Posts.update({
-    // (postExist.userId = user.id),
-    (postExist.title = title ? title : postExist.title),
-      (postExist.address = address ? address : postExist.address),
-      (postExist.description = description
-        ? description
-        : postExist.description),
-      (postExist.price = price ? price : postExist.price),
-      (postExist.discount_price = discount_price
-        ? discount_price
-        : postExist.discount_price),
-      (postExist.colorId = colorIds),
-      (postExist.sizeId = sizeId ? sizeId : postExist.sizeId),
-      (postExist.materialId = materialIds),
-      (postExist.parcel_size = parcel_size
-        ? parcel_size
-        : postExist.parcel_size),
-      (postExist.brandId = brandId ? brandId : postExist.brandId),
-      (postExist.condition = condition ? condition : postExist.condition),
-      (postExist.delivery_type = delivery_type
-        ? delivery_type
-        : postExist.delivery_type),
-      (postExist.shipping = shipping ? shipping : postExist.shipping),
-      (postExist.type = type ? type : postExist.type),
-      (postExist.lat = lat ? lat : postExist.lat),
-      (postExist.lng = lng ? lng : postExist.lng),
-      (postExist.city = city ? city : postExist.city),
-      (postExist.street = street ? street : postExist.street),
-      (postExist.floor = floor ? floor : postExist.floor),
-      (postExist.state = state ? state : postExist.state),
-      (postExist.categoryId = categoryId ? categoryId : postExist.categoryId),
-      (postExist.subcategoryId = subcategoryId
-        ? subcategoryId
-        : postExist.subcategoryId),
-      (postExist.nestedsubcategoryId = nestedsubcategoryId
-        ? nestedsubcategoryId
-        : postExist.nestedsubcategoryId),
-      (postExist.subnestedsubcategoryId = subnestedsubcategoryId
-        ? subnestedsubcategoryId
-        : postExist.subnestedsubcategoryId);
-    //  });
+    postExist.title = title || postExist.title;
+    postExist.address = address || postExist.address;
+    postExist.description = description || postExist.description;
+    postExist.price = price || postExist.price;
+    postExist.discount_price = discount_price || postExist.discount_price;
+    postExist.colorId = colorIds || [];
+    postExist.sizeId = sizeId || postExist.sizeId;
+    postExist.materialId = materialIds || [];
+    postExist.parcel_size = parcel_size || postExist.parcel_size;
+    postExist.brandId = brandId || postExist.brandId;
+    postExist.condition = condition || postExist.condition;
+    postExist.delivery_type = delivery_type || postExist.delivery_type;
+    postExist.shipping = shipping || postExist.shipping;
+    postExist.type = type || postExist.type;
+    postExist.lat = lat || postExist.lat;
+    postExist.lng = lng || postExist.lng;
+    postExist.city = city || postExist.city;
+    postExist.street = street || postExist.street;
+    postExist.floor = floor || postExist.floor;
+    postExist.state = state || postExist.state;
+    postExist.categoryId = categoryId || postExist.categoryId;
+    postExist.subcategoryId = subcategoryId || postExist.subcategoryId;
+    postExist.nestedsubcategoryId =
+      nestedsubcategoryId || postExist.nestedsubcategoryId;
+    postExist.subnestedsubcategoryId =
+      subnestedsubcategoryId || postExist.subnestedsubcategoryId;
+
     await postExist.save();
-    // Associate colors with the post
     await postExist.setColors(colorIds);
     await postExist.setMaterial(materialIds);
-    const deletedImagesArray = deletedImages.split(",").map(Number);
+
+    const deletedImagesArray = deletedImages
+      ? deletedImages.split(",").map(Number)
+      : [];
     if (Array.isArray(deletedImagesArray) && deletedImagesArray.length > 0) {
       await Images.destroy({
         where: {
@@ -658,17 +574,18 @@ router.put("/update-post/:id", upload.array("images", 10), async (req, res) => {
         },
       });
     }
-    // Create Images records and associate with the post
+
     for (const imageName of uploadedImages) {
       await Images.create({
         postId: postId,
         imageUrl: imageName,
       });
     }
+
     return res.json({ postExist, message: "Post updated successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: error });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -690,8 +607,6 @@ router.put("/feature-post/:id", checkUserAuthentication, async (req, res) => {
       if (postExist.featured === true) {
         return res.status(404).json({ error: "Post is already featured" });
       }
-
-      // Set the featuredExpiry date to one day from the current date
       const oneDayInMilliseconds = 24 * 60 * 60 * 1000 * 14;
       const currentDateTime = new Date();
       const featuredExpiryDate = new Date(
@@ -726,8 +641,6 @@ router.put("/reserve-post/:id", checkUserAuthentication, async (req, res) => {
     if (postExist.reserved === true) {
       return res.status(404).json({ error: "Post is already reserved" });
     }
-
-    // Set the reservedExpiry date to one day from the current date
     const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
     const currentDateTime = new Date();
     const reservedExpiryDate = new Date(
@@ -772,31 +685,26 @@ router.get("/users-posts", checkUserAuthentication, async (req, res) => {
       ],
     });
 
-    // Map the posts to add S3 URLs to each image
     const postsWithS3Urls = posts.map((post) => {
       const postJson = post.toJSON();
-      // postJson.images = postJson.images.map((image) => {
-      //   return {
-      //     ...image,
-      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      //   };
-      // });
-      const colors = postJson.colors.map((color) => ({
-        id: color.id,
-        name: color.name,
-      }));
-      const materials = postJson.material.map((material) => ({
-        id: material.id,
-        name: material.name,
-      }));
+      const colors =
+        postJson.colors.map((color) => ({
+          id: color.id,
+          name: color.name,
+        })) || [];
+      const materials =
+        postJson.material.map((material) => ({
+          id: material.id,
+          name: material.name,
+        })) || [];
       return {
         ...postJson,
-        brandName: postJson.brand.name,
-        categoryName: postJson.category.name,
-        subcategoryName: postJson.subcategory.name,
-        nestedsubcategoryName: postJson.nestedsubcategory.name,
-        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
-        brand: undefined, // Add brand name to the response
+        brandName: postJson.brand?.name || null,
+        categoryName: postJson.category?.name || null,
+        subcategoryName: postJson.subcategory?.name || null,
+        nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+        subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
+        brand: undefined,
         colors: colors,
         material: materials,
         category: undefined,
@@ -804,7 +712,6 @@ router.get("/users-posts", checkUserAuthentication, async (req, res) => {
         nestedsubcategory: undefined,
         subnestedsubcategory: undefined,
       };
-      // return postJson;
     });
 
     res.json(postsWithS3Urls);
@@ -822,7 +729,6 @@ router.get("/featured-posts", checkUserAuthentication, async (req, res) => {
     filters.is_Approved = true;
     filters.userId = userId;
     filters.featured = true;
-    // Find all posts with feature = true for the given userId
     const posts = await Posts.findAll({
       where: filters,
       include: [
@@ -843,31 +749,26 @@ router.get("/featured-posts", checkUserAuthentication, async (req, res) => {
       ],
     });
 
-    // Map the posts to add S3 URLs to each image
     const postsWithS3Urls = posts.map((post) => {
       const postJson = post.toJSON();
-      // postJson.images = postJson.images.map((image) => {
-      //   return {
-      //     ...image,
-      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      //   };
-      // });
-      const colors = postJson.colors.map((color) => ({
-        id: color.id,
-        name: color.name,
-      }));
-      const materials = postJson.material.map((material) => ({
-        id: material.id,
-        name: material.name,
-      }));
+      const colors =
+        postJson.colors.map((color) => ({
+          id: color.id,
+          name: color.name,
+        })) || [];
+      const materials =
+        postJson.material.map((material) => ({
+          id: material.id,
+          name: material.name,
+        })) || [];
       return {
         ...postJson,
-        brandName: postJson.brand.name,
-        categoryName: postJson.category.name,
-        subcategoryName: postJson.subcategory.name,
-        nestedsubcategoryName: postJson.nestedsubcategory.name,
-        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
-        brand: undefined, // Add brand name to the response
+        brandName: postJson.brand?.name || null,
+        categoryName: postJson.category?.name || null,
+        subcategoryName: postJson.subcategory?.name || null,
+        nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+        subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
+        brand: undefined,
         colors: colors,
         material: materials,
         category: undefined,
@@ -875,7 +776,6 @@ router.get("/featured-posts", checkUserAuthentication, async (req, res) => {
         nestedsubcategory: undefined,
         subnestedsubcategory: undefined,
       };
-      // return postJson;
     });
 
     res.json(postsWithS3Urls);
@@ -893,7 +793,6 @@ router.get("/reserved-posts", checkUserAuthentication, async (req, res) => {
     filters.is_Approved = true;
     filters.userId = userId;
     filters.reserved = true;
-    // Find all posts with feature = true for the given userId
     const posts = await Posts.findAll({
       where: filters,
       include: [
@@ -914,31 +813,26 @@ router.get("/reserved-posts", checkUserAuthentication, async (req, res) => {
       ],
     });
 
-    // Map the posts to add S3 URLs to each image
     const postsWithS3Urls = posts.map((post) => {
       const postJson = post.toJSON();
-      // postJson.images = postJson.images.map((image) => {
-      //   return {
-      //     ...image,
-      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      //   };
-      // });
-      const colors = postJson.colors.map((color) => ({
-        id: color.id,
-        name: color.name,
-      }));
-      const materials = postJson.material.map((material) => ({
-        id: material.id,
-        name: material.name,
-      }));
+      const colors =
+        postJson.colors.map((color) => ({
+          id: color.id,
+          name: color.name,
+        })) || [];
+      const materials =
+        postJson.material.map((material) => ({
+          id: material.id,
+          name: material.name,
+        })) || [];
       return {
         ...postJson,
-        brandName: postJson.brand.name,
-        categoryName: postJson.category.name,
-        subcategoryName: postJson.subcategory.name,
-        nestedsubcategoryName: postJson.nestedsubcategory.name,
-        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
-        brand: undefined, // Add brand name to the response
+        brandName: postJson.brand?.name || null,
+        categoryName: postJson.category?.name || null,
+        subcategoryName: postJson.subcategory?.name || null,
+        nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+        subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
+        brand: undefined,
         colors: colors,
         material: materials,
         category: undefined,
@@ -946,7 +840,6 @@ router.get("/reserved-posts", checkUserAuthentication, async (req, res) => {
         nestedsubcategory: undefined,
         subnestedsubcategory: undefined,
       };
-      // return postJson;
     });
 
     res.json(postsWithS3Urls);
@@ -961,14 +854,10 @@ router.delete("/deletepost/:id", async (req, res) => {
   try {
     const postId = req.params.id;
     const post = await Posts.findByPk(postId);
-
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
     }
-
-    // Delete the post
     await post.destroy();
-
     return res.status(200).json({ message: "Post removed successfully." });
   } catch (error) {
     console.error(error);
@@ -1051,8 +940,6 @@ router.get("/postsfilter", async (req, res) => {
         attributes: ["id", "username", "profileImage"],
       },
     ];
-
-    // Conditionally include the 'colors' association if 'colorId' is provided
     if (colorId) {
       includeArray.push({
         model: Colors,
@@ -1081,25 +968,23 @@ router.get("/postsfilter", async (req, res) => {
 
     const postsWithS3Urls = filteredPosts.map((post) => {
       const postJson = post.toJSON();
-      // postJson.images = postJson.images.map((image) => ({
-      //   ...image,
-      //   imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      // }));
-      const colors = postJson.colors.map((color) => ({
-        id: color.id,
-        name: color.name,
-      }));
-      const materials = postJson.material.map((material) => ({
-        id: material.id,
-        name: material.name,
-      }));
+      const colors =
+        postJson.colors.map((color) => ({
+          id: color.id,
+          name: color.name,
+        })) || [];
+      const materials =
+        postJson.material.map((material) => ({
+          id: material.id,
+          name: material.name,
+        })) || [];
       return {
         ...postJson,
-        brandName: postJson.brand.name,
-        categoryName: postJson.category.name,
-        subcategoryName: postJson.subcategory.name,
-        nestedsubcategoryName: postJson.nestedsubcategory.name,
-        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
+        brandName: postJson.brand?.name || null,
+        categoryName: postJson.category?.name || null,
+        subcategoryName: postJson.subcategory?.name || null,
+        nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+        subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
         brand: undefined,
         colors: colors,
         material: materials,
@@ -1129,8 +1014,8 @@ router.get("/popular-posts", async (req, res) => {
     filters.is_Approved = true;
     const highestViewsPosts = await Posts.findAll({
       where: filters,
-      limit: 5, // Limit the result to 5 posts
-      order: [["views", "DESC"]], // Order by views in descending order
+      limit: 5,
+      order: [["views", "DESC"]],
       include: [
         { model: Images, as: "images" },
         { model: Brand, as: "brand" },
@@ -1155,28 +1040,24 @@ router.get("/popular-posts", async (req, res) => {
 
     const postsWithS3Urls = highestViewsPosts.map((post) => {
       const postJson = post.toJSON();
-      // postJson.images = postJson.images.map((image) => {
-      //   return {
-      //     ...image,
-      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      //   };
-      // });
-      const colors = postJson.colors.map((color) => ({
-        id: color.id,
-        name: color.name,
-      }));
-      const materials = postJson.material.map((material) => ({
-        id: material.id,
-        name: material.name,
-      }));
+      const colors =
+        postJson.colors.map((color) => ({
+          id: color.id,
+          name: color.name,
+        })) || [];
+      const materials =
+        postJson.material.map((material) => ({
+          id: material.id,
+          name: material.name,
+        })) || [];
       return {
         ...postJson,
-        brandName: postJson.brand.name,
-        categoryName: postJson.category.name,
-        subcategoryName: postJson.subcategory.name,
-        nestedsubcategoryName: postJson.nestedsubcategory.name,
-        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
-        brand: undefined, // Add brand name to the response
+        brandName: postJson.brand?.name || null,
+        categoryName: postJson.category?.name || null,
+        subcategoryName: postJson.subcategory?.name || null,
+        nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+        subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
+        brand: undefined,
         colors: colors,
         material: materials,
         category: undefined,
@@ -1199,15 +1080,14 @@ router.get("/newest-posts", async (req, res) => {
   try {
     const { type } = req.query;
     const filters = {};
-
     if (type) {
       filters.type = type;
     }
     filters.is_Approved = true;
     const newestPosts = await Posts.findAll({
       where: filters,
-      limit: 10, // Limit the result to 10 posts
-      order: [["createdAt", "DESC"]], // Order by creation date in descending order
+      limit: 10,
+      order: [["createdAt", "DESC"]],
       include: [
         { model: Images, as: "images" },
         { model: Brand, as: "brand" },
@@ -1232,28 +1112,24 @@ router.get("/newest-posts", async (req, res) => {
 
     const postsWithS3Urls = newestPosts.map((post) => {
       const postJson = post.toJSON();
-      // postJson.images = postJson.images.map((image) => {
-      //   return {
-      //     ...image,
-      //     imageUrl: `https://ropero.s3.sa-east-1.amazonaws.com/${image.imageUrl}`,
-      //   };
-      // });
-      const colors = postJson.colors.map((color) => ({
-        id: color.id,
-        name: color.name,
-      }));
-      const materials = postJson.material.map((material) => ({
-        id: material.id,
-        name: material.name,
-      }));
+      const colors =
+        postJson.colors.map((color) => ({
+          id: color.id,
+          name: color.name,
+        })) || [];
+      const materials =
+        postJson.material.map((material) => ({
+          id: material.id,
+          name: material.name,
+        })) || [];
       return {
         ...postJson,
-        brandName: postJson.brand.name,
-        categoryName: postJson.category.name,
-        subcategoryName: postJson.subcategory.name,
-        nestedsubcategoryName: postJson.nestedsubcategory.name,
-        subnestedsubcategoryName: postJson.subnestedsubcategory.name,
-        brand: undefined, // Add brand name to the response
+        brandName: postJson.brand?.name || null,
+        categoryName: postJson.category?.name || null,
+        subcategoryName: postJson.subcategory?.name || null,
+        nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+        subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
+        brand: undefined,
         colors: colors,
         material: materials,
         category: undefined,
@@ -1261,7 +1137,6 @@ router.get("/newest-posts", async (req, res) => {
         nestedsubcategory: undefined,
         subnestedsubcategory: undefined,
       };
-      // return postJson;
     });
 
     res.json(postsWithS3Urls);
@@ -1276,14 +1151,11 @@ router.get("/newest-posts", async (req, res) => {
 // Route to Approve or DisApprove a post by ID
 router.put("/aprrove-disapprove/:id", async (req, res) => {
   const postId = req.params.id;
-
   try {
     const post = await Posts.findByPk(postId);
-
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
-
     if (post.is_Approved === false) {
       post.is_Approved = true;
       await post.save();

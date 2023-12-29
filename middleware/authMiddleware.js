@@ -9,6 +9,9 @@ const checkUserAuthentication = async (req, res, next) => {
     try {
       token = authorization.split(' ')[1];
       const userTokenInfo = jwt.verify(token, process.env.JWT_SECRET);
+      if (userTokenInfo.exp < Date.now() / 1000) {
+        return res.status(401).json({ error: 'Token expired, please log in again.' });
+      }
       const user = await User.findOne({
         where: { id: userTokenInfo.userId },
         attributes: { exclude: ["-password"] },
@@ -17,12 +20,12 @@ const checkUserAuthentication = async (req, res, next) => {
       next();
     } catch (error) {
       console.error(error);
-   return  res.status(400).json({ error: 'Invalid authorization key' });
+   return  res.status(401).json({ error: 'Invalid authorization key' });
 
     }
   }
   if (!token) {
-   return  res.status(400).json({ error: 'Authentication token missing' });
+   return  res.status(401).json({ error: 'Authentication token missing' });
   }
 };
 export default checkUserAuthentication;

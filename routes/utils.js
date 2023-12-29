@@ -2,6 +2,7 @@ import express from 'express';
 import Size from '../models/Size.js';
 import Colors from '../models/Colors.js';
 import Material from '../models/Material.js';
+import Posts from '../models/Posts.js';
 const router = express.Router();
 
 // Create a new size
@@ -50,6 +51,26 @@ router.put('/update-size/:id', async (req, res) => {
   }
 });
 
+// Delete size by ID
+router.delete("/delete-size/:id", async (req, res) => {
+  try {
+    const sizeId = req.params.id;
+    await Posts.update(
+      { sizeId: null },
+      { where: { sizeId } }
+    );
+    const size = await Size.findByPk(sizeId);
+    if (!size) {
+      return res.status(404).json({ error: "Size not found" });
+    }
+    await size.destroy();
+    return res.status(200).json({ message: "Size removed successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // Create a new color
 router.post('/addColor', async (req, res) => {
   try {
@@ -94,6 +115,22 @@ router.put('/update-color/:id', async (req, res) => {
   }
 });
 
+// Delete color by ID
+router.delete("/delete-color/:id", async (req, res) => {
+  try {
+    const colorId = req.params.id;
+    const color = await Colors.findByPk(colorId);
+    if (!color) {
+      return res.status(404).json({ error: "Colors not found" });
+    }
+    await color.destroy();
+    return res.status(200).json({ message: "Colors removed successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // Create a new Material
 router.post('/addMaterial', async (req, res) => {
   try {
@@ -135,6 +172,22 @@ router.put('/update-material/:id', async (req, res) => {
   } catch (error) {
 
     res.status(500).json({ error: error });
+  }
+});
+
+// Delete material by ID
+router.delete("/delete-material/:id", async (req, res) => {
+  try {
+    const materialId = req.params.id;
+    const material = await Material.findByPk(materialId);
+    if (!material) {
+      return res.status(404).json({ error: "Material not found" });
+    }
+    await material.destroy();
+    return res.status(200).json({ message: "Material removed successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 

@@ -30,6 +30,7 @@ router.post("/socialLogin", async (req, res) => {
   const id_token = req.body.id_token;
   const provider = req.body.provider;
   const fcm_token = req.body.fcm_token;
+  const TOKEN_EXPIRY_DAYS = 300 / (24 * 60 * 60);
   try {
     let usrRes, username, email, userData, profileImage;
     if (provider === "google") {
@@ -68,7 +69,7 @@ router.post("/socialLogin", async (req, res) => {
     ) {
       // means we already have a user with this email and this email was registered through social
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.TOKEN_EXPIRY_DAYS,
+        expiresIn:  `${TOKEN_EXPIRY_DAYS}d`,
       });
       user.fcm_token = fcm_token;
       await user.save();
@@ -92,7 +93,7 @@ router.post("/socialLogin", async (req, res) => {
           { userId: userData.id },
           process.env.JWT_SECRET,
           {
-            expiresIn: process.env.TOKEN_EXPIRY_DAYS,
+            expiresIn:  `${TOKEN_EXPIRY_DAYS}d`,
           }
         );
         const data = { token: token, user: userData };
@@ -114,7 +115,7 @@ async function isEmail(input) {
 }
 
 async function isPhoneNumber(input) {
-  const phoneRegex = /^\d{10}$/;
+  const phoneRegex = /^\d{8}$/;
   return phoneRegex.test(input);
 }
 
@@ -176,7 +177,7 @@ router.post("/register", upload.single("profileImage"), async (req, res) => {
         const message = await client.messages.create({
           body: `https://www.elropero.app/loading?token=${token}`,
           messagingServiceSid: process.env.MESSAGING_SERVICE_ID,
-          to: `+92${emailOrPhone}`,
+          to: `+591${emailOrPhone}`,
         });
 
         console.log(`Message sent successfully. SID: ${message.body}`);
@@ -263,7 +264,7 @@ router.post("/resend-verification", async (req, res) => {
         const message = await client.messages.create({
           body: `https://www.elropero.app/loading?token=${token}`,
           messagingServiceSid: process.env.MESSAGING_SERVICE_ID,
-          to: `+92${emailOrPhone}`,
+          to: `+591${emailOrPhone}`,
         });
 
         console.log(`Message sent successfully. SID: ${message.body}`);
@@ -383,9 +384,9 @@ router.post("/reset-password-request", async (req, res) => {
     } else if (phone) {
       try {
         const message = await client.messages.create({
-          body: `https://www.elropero.app/loading?token=${resetToken}`,
+          body: `https://www.elropero.app/reset-password?token=${resetToken}`,
           messagingServiceSid: process.env.MESSAGING_SERVICE_ID,
-          to: `+92${emailOrPhone}`,
+          to: `+591${emailOrPhone}`,
         });
 
         console.log(`Message sent successfully. SID: ${message.body}`);
@@ -396,7 +397,7 @@ router.post("/reset-password-request", async (req, res) => {
 
     return res
       .status(200)
-      .json({ error: "Reset token is sent to your provided email." });
+      .json({ error: "Reset token is sent to your provided email/phone." });
   } catch (error) {
     console.error(error);
     res

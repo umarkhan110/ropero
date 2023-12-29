@@ -31,7 +31,6 @@ AWS.config.update({
         throw error;
       }
     }
-  console.log(uploadedImages)
     return uploadedImages;
   };
 
