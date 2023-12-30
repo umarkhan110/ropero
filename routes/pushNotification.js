@@ -78,4 +78,22 @@ router.get('/all-notification/:id', async (req, res) => {
   }
 }
 );
+
+// Update notification by Id
+router.put('/update-notification/:id', async (req, res) => {
+  try {
+    const notificationId = req.params.id;
+    const notification = await Notifications.findByPk(notificationId);
+
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+    notification.status = "read";
+    await notification.save();
+    return res.json({ message: 'Notification updated successfully' });
+  } catch (error) {
+
+    res.status(500).json({ error: error });
+  }
+});
 export default router;

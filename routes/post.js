@@ -663,7 +663,7 @@ router.get("/users-posts", checkUserAuthentication, async (req, res) => {
   try {
     const userId = req.user.id;
     const filters = {};
-    filters.is_Approved = true;
+    // filters.is_Approved = true;
     filters.userId = userId;
     const posts = await Posts.findAll({
       where: filters,

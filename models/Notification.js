@@ -19,6 +19,13 @@ const Notifications = sequelize.define("Notifications", {
   reciver_id: {
     type: DataTypes.INTEGER,
   },
+  status: {
+    type: DataTypes.STRING,
+    defaultValue: "unread",
+  }
 });
 
 export default Notifications;
+
+// ALTER TABLE `ropero`.`Notifications` 
+// ADD COLUMN `status` VARCHAR(45) NULL DEFAULT 'unread' AFTER `updatedAt`;
