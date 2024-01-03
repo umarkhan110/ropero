@@ -30,7 +30,7 @@ router.post("/socialLogin", async (req, res) => {
   const id_token = req.body.id_token;
   const provider = req.body.provider;
   const fcm_token = req.body.fcm_token;
-  const TOKEN_EXPIRY_DAYS = 300 / (24 * 60 * 60);
+  const TOKEN_EXPIRY_DAYS = 7;
   try {
     let usrRes, username, email, userData, profileImage;
     if (provider === "google") {
@@ -310,7 +310,8 @@ router.post("/login", async (req, res) => {
     }
 
     if (passwordMatch) {
-      const TOKEN_EXPIRY_DAYS = 84600 / (24 * 60 * 60);
+      // const TOKEN_EXPIRY_DAYS = 84600 / (24 * 60 * 60);
+      const TOKEN_EXPIRY_DAYS = 7;
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
         expiresIn: `${TOKEN_EXPIRY_DAYS}d`,
       });
