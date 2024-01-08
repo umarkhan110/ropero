@@ -399,6 +399,7 @@ router.get("/viewpost/:id", async (req, res) => {
       where: {
         "$nestedsubcategory.id$": postJson.nestedsubcategoryId,
         "$subnestedsubcategory.id$": postJson.subnestedsubcategoryId,
+        is_Approved: true,
         id: {
           [Op.not]: post.id,
         },
@@ -594,7 +595,7 @@ router.put("/feature-post/:id", checkUserAuthentication, async (req, res) => {
   try {
     const user = req.user;
     if (user) {
-      if (req.user.credits < 5) {
+      if (req.user.credits < 35) {
         return res.status(404).json({ error: "You don't have enough credits" });
       }
       const postId = req.params.id;
@@ -616,6 +617,8 @@ router.put("/feature-post/:id", checkUserAuthentication, async (req, res) => {
       postExist.featuredExpiry = featuredExpiryDate;
 
       await postExist.save();
+      user.credits = user.credits - 35;
+      await user.save();
       return res.json({ postExist, message: "Post featured successfully" });
     }
   } catch (error) {
@@ -651,6 +654,8 @@ router.put("/reserve-post/:id", checkUserAuthentication, async (req, res) => {
     postExist.reservedExpiry = reservedExpiryDate;
 
     await postExist.save();
+    user.credits = user.credits - 5;
+    await user.save();
     return res.json({ postExist, message: "Post reserved successfully" });
   } catch (error) {
     console.error(error);

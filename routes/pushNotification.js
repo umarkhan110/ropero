@@ -20,7 +20,7 @@ admin.initializeApp({
 router.post("/send-notification", checkUserAuthentication, async (req, res) => {
   try {
     const sender = req.user;
-    console.log(sender.username);
+    console.log(sender);
     const { userId, title, message } = req.body;
     const user = await User.findByPk(userId);
 
@@ -31,6 +31,7 @@ router.post("/send-notification", checkUserAuthentication, async (req, res) => {
     }
 
     const newNotification = await Notifications.create({
+      sender_id: sender.id,
       sender_name: sender.username,
       sender_image: sender.profileImage,
       reciver_id: userId,
@@ -47,6 +48,7 @@ router.post("/send-notification", checkUserAuthentication, async (req, res) => {
       data: {
         notificationId: newNotification.id.toString(),
         status: "unread",
+        sender_id: sender.id.toString(),
         sender_name: String(sender.username),
         sender_image: String(sender.profileImage),
       },
