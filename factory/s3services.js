@@ -15,9 +15,11 @@ AWS.config.update({
   
     for (const image of images) {
       const { imageData, fileName } = image;
+      const timestamp = new Date().getTime();
+      const fileNameWithTimestamp = `${timestamp}_${fileName}`;
       const params = {
         Bucket: 'ropero',
-        Key: fileName,
+        Key: fileNameWithTimestamp,
         Body: imageData,
         ACL: "public-read", // can be either "public-read" or "private"
         ContentType: 'image/jpeg',
@@ -25,7 +27,7 @@ AWS.config.update({
   
       try {
         await s3.putObject(params).promise();
-        uploadedImages.push(`https://ropero.s3.sa-east-1.amazonaws.com/${fileName}`);
+        uploadedImages.push(`https://ropero.s3.sa-east-1.amazonaws.com/${fileNameWithTimestamp}`);
       } catch (error) {
         console.error('Error uploading image:', error);
         throw error;

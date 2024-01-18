@@ -334,6 +334,7 @@ router.post("/login", async (req, res) => {
           no_of_posts: user.no_of_posts,
           isVerified: user.isVerified,
           provider: user.provider,
+          cnic: user.cnic
         },
       });
     }
@@ -468,6 +469,7 @@ router.get("/get-all-user", async (req, res) => {
         "isVerified",
         "is_disabled",
         "no_of_posts",
+        "cnic"
       ],
       offset,
       limit: pageSize,
@@ -490,7 +492,7 @@ router.put(
   upload.single("profileImage"),
   async (req, res) => {
     const userId = req.params.id;
-    const { username, email, phone, password, address, city, state } = req.body;
+    const { username, email, phone, password, address, city, state, cnic } = req.body;
     try {
       const user = await User.findByPk(userId);
       if (!user) {
@@ -519,6 +521,7 @@ router.put(
         user.address = address || user?.address;
         user.city = city || user?.city;
         user.state = state || user?.state;
+        user.cnic = cnic || user?.cnic;
         await user.save();
         return res.json({ message: "User details updated successfully" });
       } else {
@@ -618,6 +621,7 @@ router.get("/user-detail/:id", async (req, res) => {
         no_of_posts: user.no_of_posts,
         isVerified: user.isVerified,
         provider: user.provider,
+        cnic: user.cnic
       },
     });
   } catch (error) {

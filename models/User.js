@@ -64,13 +64,14 @@ const User = sequelize.define("User", {
     allowNull: false,
     defaultValue: false,
   },
+  cnic: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  }
 });
 
 export default User;
 
-
 // ALTER TABLE `ropero`.`Users` 
-// ADD COLUMN `phone` VARCHAR(45) NULL AFTER `no_of_posts`,
-// CHANGE COLUMN `email` `email` VARCHAR(255) NULL ,
-// ADD UNIQUE INDEX `phone_UNIQUE` (`phone` ASC) VISIBLE,
-// DROP INDEX `username` ;
+// ADD COLUMN `cnic` VARCHAR(45) NULL AFTER `phone`;
+

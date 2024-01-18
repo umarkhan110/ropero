@@ -62,8 +62,7 @@ router.post(
             subnestedsubcategoryId,
             address,
           } = req.body;
-          console.log(req.body.nestedsubcategoryId);
-          if (!userId || !title || !price || !categoryId || !brandId) {
+          if (!title || !price || !categoryId || !brandId) {
             return res
               .status(409)
               .json({ error: "All fields must be filled." });
@@ -84,7 +83,7 @@ router.post(
             : [];
 
           const post = await Posts.create({
-            userId,
+            userId:req.user.id,
             title,
             description,
             price,
@@ -122,7 +121,7 @@ router.post(
           user.credits = user.credits - 2;
           user.no_of_posts = user.no_of_posts + 1;
           await user.save();
-          res.status(201).json(post);
+          res.status(201).json({post, credit:user.credits});
         } else {
           return res.status(409).json({ message: "You do not have credit" });
         }
@@ -162,8 +161,7 @@ router.post(
           subnestedsubcategoryId,
           address,
         } = req.body;
-        console.log(req.body.nestedsubcategoryId);
-        if (!userId || !title || !price || !categoryId || !brandId) {
+        if (!title || !price || !categoryId || !brandId) {
           return res.status(409).json({ error: "All fields must be filled." });
         }
         if (uploadedImages.length === 0) {
@@ -179,7 +177,7 @@ router.post(
         const colorIds = colorId ? colorId.split(",").map(Number) : [];
         const materialIds = materialId ? materialId.split(",").map(Number) : [];
         const post = await Posts.create({
-          userId,
+          userId:req.user.id,
           title,
           description,
           price,
@@ -216,7 +214,213 @@ router.post(
         const user = req.user;
         user.no_of_posts = user.no_of_posts + 1;
         await user.save();
-        res.status(201).json(post);
+        res.status(201).json({post, credit:user.credits});
+      }
+    } catch (error) {
+      console.log(error);
+      res.status(400).json({ error: error?.parent?.sqlMessage });
+    }
+  }
+);
+
+// Create post by admin
+router.post(
+  "/create_post_by_admin",
+  upload.array("images", 10),
+  async (req, res) => {
+    try {
+      const userRes = await User.findByPk(req.body.userId);
+      if (!userRes) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      if (userRes.no_of_posts > 5) {
+        if (userRes.credits > 1) {
+          const images = req.files.map((file, index) => {
+            return {
+              imageData: file.buffer,
+              fileName: file.originalname,
+            };
+          });
+          const uploadedImages = await uploadImagesToS3(images);
+
+          const {
+            userId,
+            title,
+            description,
+            price,
+            discount_price,
+            colorId,
+            sizeId,
+            materialId,
+            parcel_size,
+            brandId,
+            condition,
+            delivery_type,
+            shipping,
+            type,
+            lat,
+            lng,
+            city,
+            street,
+            floor,
+            state,
+            categoryId,
+            subcategoryId,
+            nestedsubcategoryId,
+            subnestedsubcategoryId,
+            address,
+          } = req.body;
+          if (!userId || !title || !price || !categoryId || !brandId) {
+            return res
+              .status(409)
+              .json({ error: "All fields must be filled." });
+          }
+          if (uploadedImages.length === 0) {
+            return res
+              .status(409)
+              .json({ error: "At least one image is required." });
+          }
+          const optionalFields = {
+            nestedsubcategoryId: nestedsubcategoryId || null,
+            subnestedsubcategoryId: subnestedsubcategoryId || null,
+          };
+
+          const colorIds = colorId ? colorId.split(",").map(Number) : [];
+          const materialIds = materialId
+            ? materialId.split(",").map(Number)
+            : [];
+
+          const post = await Posts.create({
+            userId,
+            is_Approved: true,
+            title,
+            description,
+            price,
+            discount_price,
+            colorId: colorIds,
+            sizeId,
+            materialId: materialIds,
+            parcel_size,
+            brandId,
+            condition,
+            delivery_type,
+            shipping,
+            type,
+            lat,
+            lng,
+            city,
+            street,
+            floor,
+            state,
+            categoryId,
+            subcategoryId,
+            ...optionalFields,
+            address,
+          });
+          await post.setColors(colorIds);
+          await post.setMaterial(materialIds);
+          for (const imageName of uploadedImages) {
+            await Images.create({
+              postId: post.id,
+              imageUrl: imageName,
+            });
+          }
+          userRes.credits = userRes.credits - 2;
+          userRes.no_of_posts = userRes.no_of_posts + 1;
+          await userRes.save();
+          res.status(201).json({post, credit:userRes.credits});
+        } else {
+          return res.status(409).json({ message: "You do not have credit" });
+        }
+      } else {
+        const images = req.files.map((file, index) => {
+          return {
+            imageData: file.buffer,
+            fileName: file.originalname,
+          };
+        });
+        const uploadedImages = await uploadImagesToS3(images);
+
+        const {
+          userId,
+          title,
+          description,
+          price,
+          discount_price,
+          colorId,
+          sizeId,
+          materialId,
+          parcel_size,
+          brandId,
+          condition,
+          delivery_type,
+          shipping,
+          type,
+          lat,
+          lng,
+          city,
+          street,
+          floor,
+          state,
+          categoryId,
+          subcategoryId,
+          nestedsubcategoryId,
+          subnestedsubcategoryId,
+          address,
+        } = req.body;
+        if (!userId || !title || !price || !categoryId || !brandId) {
+          return res.status(409).json({ error: "All fields must be filled." });
+        }
+        if (uploadedImages.length === 0) {
+          return res
+            .status(409)
+            .json({ error: "At least one image is required." });
+        }
+        const optionalFields = {
+          nestedsubcategoryId: nestedsubcategoryId || null,
+          subnestedsubcategoryId: subnestedsubcategoryId || null,
+        };
+
+        const colorIds = colorId ? colorId.split(",").map(Number) : [];
+        const materialIds = materialId ? materialId.split(",").map(Number) : [];
+        const post = await Posts.create({
+          userId,
+          title,
+          description,
+          is_Approved: true,
+          price,
+          discount_price,
+          colorId: colorIds,
+          sizeId,
+          materialId: materialIds,
+          parcel_size,
+          brandId,
+          condition,
+          delivery_type,
+          shipping,
+          type,
+          lat,
+          lng,
+          city,
+          street,
+          floor,
+          state,
+          categoryId,
+          subcategoryId,
+          ...optionalFields,
+          address,
+        });
+        await post.setColors(colorIds);
+        await post.setMaterial(materialIds);
+        for (const imageName of uploadedImages) {
+          await Images.create({
+            postId: post.id,
+            imageUrl: imageName,
+          });
+        }
+        userRes.no_of_posts = userRes.no_of_posts + 1;
+        await userRes.save();
+        res.status(201).json({post, credit:userRes.credits});
       }
     } catch (error) {
       console.log(error);
@@ -605,9 +809,14 @@ router.put("/feature-post/:id", checkUserAuthentication, async (req, res) => {
         return res.status(404).json({ error: "Post not found" });
       }
 
+      if (postExist.is_Approved === false) {
+        return res.status(404).json({ error: "Post is not approved" });
+      }
+      
       if (postExist.featured === true) {
         return res.status(404).json({ error: "Post is already featured" });
       }
+      
       const oneDayInMilliseconds = 24 * 60 * 60 * 1000 * 14;
       const currentDateTime = new Date();
       const featuredExpiryDate = new Date(
@@ -619,7 +828,7 @@ router.put("/feature-post/:id", checkUserAuthentication, async (req, res) => {
       await postExist.save();
       user.credits = user.credits - 35;
       await user.save();
-      return res.json({ postExist, message: "Post featured successfully" });
+      return res.json({ postExist, credit:user.credits, message: "Post featured successfully" });
     }
   } catch (error) {
     console.error(error);
@@ -656,7 +865,7 @@ router.put("/reserve-post/:id", checkUserAuthentication, async (req, res) => {
     await postExist.save();
     user.credits = user.credits - 5;
     await user.save();
-    return res.json({ postExist, message: "Post reserved successfully" });
+    return res.json({ postExist, credit:user.credits, message: "Post reserved successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "An error occurred while creating a post." });
@@ -731,8 +940,8 @@ router.get("/featured-posts", checkUserAuthentication, async (req, res) => {
   try {
     const userId = req.user.id;
     const filters = {};
-    filters.is_Approved = true;
-    filters.userId = userId;
+    // filters.is_Approved = true;
+    // filters.userId = userId;
     filters.featured = true;
     const posts = await Posts.findAll({
       where: filters,
@@ -795,7 +1004,7 @@ router.get("/reserved-posts", checkUserAuthentication, async (req, res) => {
   try {
     const userId = req.user.id;
     const filters = {};
-    filters.is_Approved = true;
+    // filters.is_Approved = true;
     filters.userId = userId;
     filters.reserved = true;
     const posts = await Posts.findAll({
