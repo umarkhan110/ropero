@@ -56,18 +56,16 @@ router.post("/socialLogin", async (req, res) => {
         }
       );
       userData = usrRes.data;
-      username = userData.first_name;
-      email = userData.email;
+      username = userData.name;
+      email = userData.id;
       profileImage = userData.picture.data.url;
     }
 
     const user = await User.findOne({ where: { email: email } });
-    console.log(user);
     if (
       (user && user.provider === "google") ||
       (user && user.provider === "facebook")
     ) {
-      // means we already have a user with this email and this email was registered through social
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
         expiresIn:  `${TOKEN_EXPIRY_DAYS}d`,
       });
