@@ -86,6 +86,7 @@ router.post("/socialLogin", async (req, res) => {
           state: "",
           city: "",
           address: "",
+          fcm_token:fcm_token
         });
         const token = jwt.sign(
           { userId: userData.id },
@@ -103,6 +104,7 @@ router.post("/socialLogin", async (req, res) => {
       }
     }
   } catch (error) {
+    console.log(error)
     return res.status(400).json({ error: error });
   }
 });
@@ -165,8 +167,8 @@ router.post("/register", upload.single("profileImage"), async (req, res) => {
         to: emailOrPhone,
         from: "elropero@elropero.app",
         subject: "Email Verification Code",
-        text: "This is your email verification code",
-        html: `<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Email</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${token}">Staging Verify Email</a></strong>`,
+        text: "Haga clic en el siguiente link para verificar su correo electrónico",
+        html: `<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Email</a></strong>`,
       };
       sgMail.send(msg);
       console.log(token);
@@ -253,8 +255,8 @@ router.post("/resend-verification", async (req, res) => {
         to: emailOrPhone,
         from: "elropero@elropero.app",
         subject: "Email Verification Code",
-        text: "This is your email verification code",
-        html: `<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Code</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${token}">Staging Verify Code</strong>`,
+        text: "Haga clic en el siguiente link para verificar su correo electrónico",
+        html: `<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Code</a></strong>`,
       };
       sgMail.send(msg);
     } else if (phone) {
@@ -377,8 +379,8 @@ router.post("/reset-password-request", async (req, res) => {
         to: emailOrPhone,
         from: "elropero@elropero.app",
         subject: "Email Verification Code",
-        text: "This is your email verification code",
-        html: `<strong><a href="https://www.elropero.app/reset-password?token=${resetToken}">Password Reset Code</a></strong><br><strong><a href="https://main.d3jf36qtaaf0i6.amplifyapp.com/loading?token=${resetToken}">Staging Password Reset Code</strong>`,
+        text: "Por favor, haz clic en el enlace para restablecer la contraseña",
+        html: `<strong><a href="https://www.elropero.app/reset-password?token=${resetToken}">Password Reset Code</a></strong>`,
       };
       sgMail.send(msg);
     } else if (phone) {

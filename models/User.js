@@ -73,5 +73,6 @@ const User = sequelize.define("User", {
 export default User;
 
 // ALTER TABLE `ropero`.`Users` 
-// ADD COLUMN `cnic` VARCHAR(45) NULL AFTER `phone`;
+// CHANGE COLUMN `profileImage` `profileImage` VARCHAR(1000) NULL DEFAULT NULL ;
+
 

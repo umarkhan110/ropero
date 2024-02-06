@@ -731,7 +731,6 @@ router.put("/update-post/:id", upload.array("images", 10), async (req, res) => {
       address,
       deletedImages,
     } = req.body;
-console.log(nestedsubcategoryId)
     const colorIds = colorId ? colorId.split(",").map(Number) : colors || [];
     const materialIds = materialId
       ? materialId.split(",").map(Number)

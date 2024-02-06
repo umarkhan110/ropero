@@ -6,6 +6,14 @@ import "dotenv/config";
 import User from "../models/User.js";
 const router = express.Router();
 
+const expireDate = ()=>{
+  let currentDate = new Date();
+  let expirationDate = new Date(currentDate);
+  expirationDate.setHours(currentDate.getHours() + 24);
+  let formattedExpirationDate = expirationDate.toISOString().split('T')[0];
+  return formattedExpirationDate
+}
+
 // Create a new subscription
 router.post("/subscribed", async (req, res) => {
   try {
@@ -19,13 +27,14 @@ router.post("/subscribed", async (req, res) => {
         `https://marketapi.bnb.com.bo/ClientAuthentication.API/api/v1/auth/token`,
         data
       );
+      console.log("abc: ", getToken.data)
       if (getToken.status === 200) {
         const data = {
           currency: "BOB",
-          gloss: "Prueba BOA",
+          gloss: "Test",
           amount: amount,
           singleUse: true,
-          expirationDate: "2024-09-10",
+          expirationDate: expireDate(),
         };
         const qrRes = await axios.post(
           `https://marketapi.bnb.com.bo/QRSimple.API/api/v1/main/getQRWithImageAsync`,
@@ -53,7 +62,7 @@ router.post("/subscribed", async (req, res) => {
       }
     }
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res
       .status(500)
       .json({ error: "An error occurred while creating a QR Code." });

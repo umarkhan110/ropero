@@ -5,6 +5,14 @@ import axios from "axios";
 import "dotenv/config";
 const router = express.Router();
 
+const expireDate = ()=>{
+  let currentDate = new Date();
+  let expirationDate = new Date(currentDate);
+  expirationDate.setHours(currentDate.getHours() + 24);
+  let formattedExpirationDate = expirationDate.toISOString().split('T')[0];
+  return formattedExpirationDate
+}
+
 // Create a qr code for reserving post
 router.get("/generate_qr_for_reserve", async (req, res) => {
   try {
@@ -22,7 +30,7 @@ router.get("/generate_qr_for_reserve", async (req, res) => {
         gloss: "Prueba BOA",
         amount: 20,
         singleUse: true,
-        expirationDate: "2024-09-10",
+        expirationDate: expireDate(),
       };
       const qrRes = await axios.post(
         `https://marketapi.bnb.com.bo/QRSimple.API/api/v1/main/getQRWithImageAsync`,
