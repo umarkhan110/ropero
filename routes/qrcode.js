@@ -31,7 +31,7 @@ router.post("/subscribed", async (req, res) => {
       if (getToken.status === 200) {
         const data = {
           currency: "BOB",
-          gloss: "Test",
+          gloss: "pago paquete",
           amount: amount,
           singleUse: true,
           expirationDate: expireDate(),
@@ -71,7 +71,6 @@ router.post("/subscribed", async (req, res) => {
 
 // Verify Payment
 router.get("/qr-status/:id",checkUserAuthentication, async (req, res) => {
-  // console.log(req.user)
   const qrId = req.params.id;
   try {
     const data = {
@@ -83,7 +82,6 @@ router.get("/qr-status/:id",checkUserAuthentication, async (req, res) => {
       data
     );
     if (getToken.status === 200) {
-      // console.log(getToken.data.message)
       const data2= {
         qrId:qrId
     }
@@ -96,14 +94,11 @@ router.get("/qr-status/:id",checkUserAuthentication, async (req, res) => {
           },
         }
       ); 
-      console.log("qrStatus:", qrStatus)
-      if(qrStatus.status === 200){
-        // console.log("gjhjhg")
+      if(qrStatus.status === 200 && qrStatus.data.statusId === 2){
         const existingQrCode = await QrCode.findOne({
           where: { qrId: qrId },
         });
         if(existingQrCode){
-          // console.log("abc:", existingQrCode.credits)
           existingQrCode.status = "Completed"
           await existingQrCode.save();
           const user = req.user;
@@ -112,6 +107,10 @@ router.get("/qr-status/:id",checkUserAuthentication, async (req, res) => {
           qrStatus.data.message = `${existingQrCode.credits} Credits are added into your account`
           res.json(qrStatus.data);
         }
+      }else if(qrStatus.status === 200 && qrStatus.data.statusId === 1){
+        return res.status(400).json({error: "Scan the QR code and pay"})
+      }else if(qrStatus.status === 200 && qrStatus.data.statusId === 3){
+        return res.status(400).json({error: "QR Code Expired"})
       }
     }
   } catch (error) {

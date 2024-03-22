@@ -27,7 +27,7 @@ router.get("/generate_qr_for_reserve", async (req, res) => {
     if (getToken.status === 200) {
       const data = {
         currency: "BOB",
-        gloss: "Prueba BOA",
+        gloss: "pago paquete",
         amount: 20,
         singleUse: true,
         expirationDate: expireDate(),
@@ -82,7 +82,7 @@ router.put("/qr-status/:id", checkUserAuthentication, async (req, res) => {
           },
         }
       );
-      if (qrStatus.status === 200) {
+      if (qrStatus.status === 200 && qrStatus.data.statusId === 2) {
         const user = req.user;
 
         const postExists = await Posts.findByPk(postId);
@@ -103,7 +103,11 @@ router.put("/qr-status/:id", checkUserAuthentication, async (req, res) => {
 
         await postExists.save();
         return res.json({ postExists, message: "Post reserved successfully" });
-      } else {
+      } else if(qrStatus.status === 200 && qrStatus.data.statusId === 1){
+        return res.status(400).json({error: "Scan the QR code and pay"})
+      }else if(qrStatus.status === 200 && qrStatus.data.statusId === 3){
+        return res.status(400).json({error: "QR Code Expired"})
+      }else {
         res.status(400).json({ error: qrStatus.data.message });
       }
     }
