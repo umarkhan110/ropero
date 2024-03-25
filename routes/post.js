@@ -237,108 +237,6 @@ router.post(
       if (!userRes) {
         return res.status(404).json({ error: "User not found" });
       }
-      if (userRes.no_of_posts > 5) {
-        if (userRes.credits > 1) {
-          const images = req.files.map((file, index) => {
-            return {
-              imageData: file.buffer,
-              fileName: file.originalname,
-            };
-          });
-          const uploadedImages = await uploadImagesToS3(images);
-
-          const {
-            userId,
-            title,
-            description,
-            price,
-            discount_price,
-            colorId,
-            sizeId,
-            materialId,
-            parcel_size,
-            brandId,
-            condition,
-            delivery_type,
-            shipping,
-            type,
-            lat,
-            lng,
-            city,
-            street,
-            floor,
-            state,
-            categoryId,
-            subcategoryId,
-            nestedsubcategoryId,
-            subnestedsubcategoryId,
-            address,
-            askToSeller
-          } = req.body;
-          if (!userId || !title || !categoryId || !brandId) {
-            return res
-              .status(409)
-              .json({ error: "All fields must be filled." });
-          }
-          if (uploadedImages.length === 0) {
-            return res
-              .status(409)
-              .json({ error: "At least one image is required." });
-          }
-          const optionalFields = {
-            nestedsubcategoryId: nestedsubcategoryId || null,
-            subnestedsubcategoryId: subnestedsubcategoryId || null,
-          };
-
-          const colorIds = colorId ? colorId.split(",").map(Number) : [];
-          const materialIds = materialId
-            ? materialId.split(",").map(Number)
-            : [];
-
-          const post = await Posts.create({
-            userId,
-            is_Approved: true,
-            title,
-            description,
-            price,
-            discount_price,
-            colorId: colorIds,
-            sizeId,
-            materialId: materialIds,
-            parcel_size,
-            brandId,
-            condition,
-            delivery_type,
-            shipping,
-            type,
-            lat,
-            lng,
-            city,
-            street,
-            floor,
-            state,
-            categoryId,
-            subcategoryId,
-            ...optionalFields,
-            address,
-            askToSeller
-          });
-          await post.setColors(colorIds);
-          await post.setMaterial(materialIds);
-          for (const imageName of uploadedImages) {
-            await Images.create({
-              postId: post.id,
-              imageUrl: imageName,
-            });
-          }
-          userRes.credits = userRes.credits - 2;
-          userRes.no_of_posts = userRes.no_of_posts + 1;
-          await userRes.save();
-          res.status(201).json({post, credit:userRes.credits});
-        } else {
-          return res.status(409).json({ message: "You do not have credit" });
-        }
-      } else {
         const images = req.files.map((file, index) => {
           return {
             imageData: file.buffer,
@@ -428,8 +326,8 @@ router.post(
         }
         userRes.no_of_posts = userRes.no_of_posts + 1;
         await userRes.save();
-        res.status(201).json({post, credit:userRes.credits});
-      }
+        res.status(201).json({post});
+      
     } catch (error) {
       console.log(error);
       res.status(400).json({ error: error?.parent?.sqlMessage });

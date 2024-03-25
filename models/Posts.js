@@ -281,6 +281,6 @@ export default Posts;
 
 
 
-ALTER TABLE `ropero`.`Posts` 
-ADD COLUMN `askToSeller` TINYINT NULL DEFAULT 0 AFTER `address`,
-CHANGE COLUMN `price` `price` INT NULL ;
+// ALTER TABLE `ropero`.`Posts` 
+// ADD COLUMN `askToSeller` TINYINT NULL DEFAULT 0 AFTER `address`,
+// CHANGE COLUMN `price` `price` INT NULL ;

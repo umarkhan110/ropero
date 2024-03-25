@@ -1,8 +1,7 @@
 import express from "express";
-import admin from "firebase-admin"; // Import the Firebase Admin SDK
+import admin from "firebase-admin";
 import "dotenv/config";
 import User from "../models/User.js";
-// import serviceAccount from "../el-ropero.json";
 
 const router = express.Router();
 // Import the JSON data with the correct import assertion
@@ -12,9 +11,8 @@ import Notifications from "../models/Notification.js";
 
 // Initialize the Firebase Admin SDK with your credentials
 admin.initializeApp({
-  credential: admin.credential.cert(jsonData), // Use your credentials here
+  credential: admin.credential.cert(jsonData),
   messagingSenderId: process.env.SERVER_KEY,
-  // Replace with your Firebase project URL
 });
 
 router.post("/send-notification", checkUserAuthentication, async (req, res) => {
@@ -115,14 +113,63 @@ router.put("/update-all-notification/:id", async (req, res) => {
     const updatePromises = notifications.map((notification) => {
       return notification.update({ status: "read" });
     });
-
-    // Execute all update promises
     await Promise.all(updatePromises);
-
     res.status(200).json({ message: "Notifications updated to read" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+//Send Notification to all user by admin
+router.post("/sendNotificationToAllUser", async (req, res) => {
+  try {
+    const { title, message } = req.body;
+
+    const pushMessage = {
+      notification: {
+        title: title,
+        body: message,
+      },
+      data: {
+        notificationId: "",
+        status: "unread",
+        sender_id: "admin",
+        sender_name: "admin",
+        sender_image: "admin",
+      },
+    };
+    const arrayOfId = [];
+    const users = await User.findAll({
+      attributes: ["fcm_token"],
+    });
+    users.forEach((user) => {
+      if (user.fcm_token) {
+        arrayOfId.push(user.fcm_token);
+      }
+    });
+    const response = await admin
+      .messaging()
+      .sendEachForMulticast({ ...pushMessage, tokens: arrayOfId });
+
+    response.responses.forEach((res, idx) => {
+      if (res.success) {
+        console.log(`Successfully sent message to token: ${arrayOfId[idx]}`);
+      } else {
+        console.error(
+          `Failed to send message to token: ${arrayOfId[idx]}`,
+          res.error
+        );
+        throw new Error(
+          `Failed to send message to token: ${arrayOfId[idx]} ${res.error}`
+        );
+      }
+    });
+    return res.status(200).json({ message: "Notification sent successfully." });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ error: error });
+  }
+});
+
 export default router;
