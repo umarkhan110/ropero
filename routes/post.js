@@ -61,8 +61,9 @@ router.post(
             nestedsubcategoryId,
             subnestedsubcategoryId,
             address,
+            askToSeller
           } = req.body;
-          if (!title || !price || !categoryId || !brandId) {
+          if (!title || !categoryId || !brandId) {
             return res
               .status(409)
               .json({ error: "All fields must be filled." });
@@ -107,6 +108,7 @@ router.post(
             subcategoryId,
             ...optionalFields,
             address,
+            askToSeller
           });
           await post.setColors(colorIds);
           await post.setMaterial(materialIds);
@@ -160,8 +162,9 @@ router.post(
           nestedsubcategoryId,
           subnestedsubcategoryId,
           address,
+          askToSeller
         } = req.body;
-        if (!title || !price || !categoryId || !brandId) {
+        if (!title || !categoryId || !brandId) {
           return res.status(409).json({ error: "All fields must be filled." });
         }
         if (uploadedImages.length === 0) {
@@ -201,6 +204,7 @@ router.post(
           subcategoryId,
           ...optionalFields,
           address,
+          askToSeller
         });
         await post.setColors(colorIds);
         await post.setMaterial(materialIds);
@@ -269,8 +273,9 @@ router.post(
             nestedsubcategoryId,
             subnestedsubcategoryId,
             address,
+            askToSeller
           } = req.body;
-          if (!userId || !title || !price || !categoryId || !brandId) {
+          if (!userId || !title || !categoryId || !brandId) {
             return res
               .status(409)
               .json({ error: "All fields must be filled." });
@@ -316,6 +321,7 @@ router.post(
             subcategoryId,
             ...optionalFields,
             address,
+            askToSeller
           });
           await post.setColors(colorIds);
           await post.setMaterial(materialIds);
@@ -367,8 +373,9 @@ router.post(
           nestedsubcategoryId,
           subnestedsubcategoryId,
           address,
+          askToSeller
         } = req.body;
-        if (!userId || !title || !price || !categoryId || !brandId) {
+        if (!userId || !title || !categoryId || !brandId) {
           return res.status(409).json({ error: "All fields must be filled." });
         }
         if (uploadedImages.length === 0) {
@@ -409,6 +416,7 @@ router.post(
           subcategoryId,
           ...optionalFields,
           address,
+          askToSeller
         });
         await post.setColors(colorIds);
         await post.setMaterial(materialIds);
@@ -493,7 +501,7 @@ router.get("/post", async (req, res) => {
   }
 });
 
-// Get post by admin
+// Get posts by admin
 router.get("/get-all-post-by-admin", async (req, res) => {
   try {
     let { page = 1, pageSize = 10, search } = req.query;
@@ -729,6 +737,7 @@ router.put("/update-post/:id", upload.array("images", 10), async (req, res) => {
       nestedsubcategoryId,
       subnestedsubcategoryId,
       address,
+      askToSeller,
       deletedImages,
     } = req.body;
     const colorIds = colorId ? colorId.split(",").map(Number) : colors || [];
@@ -756,6 +765,7 @@ router.put("/update-post/:id", upload.array("images", 10), async (req, res) => {
     postExist.street = street || postExist.street;
     postExist.floor = floor || postExist.floor;
     postExist.state = state || postExist.state;
+    postExist.askToSeller = askToSeller || postExist.askToSeller;
     postExist.categoryId = categoryId || postExist.categoryId;
     postExist.subcategoryId = subcategoryId || postExist.subcategoryId;
     postExist.nestedsubcategoryId =
@@ -1380,6 +1390,194 @@ router.put("/aprrove-disapprove/:id", async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+
+// Phase 2 API
+
+
+// Feature Post by Admin
+router.put("/feature-post-by-admin/:id", async (req, res) => {
+  try {
+      const postId = req.params.id;
+      const postExist = await Posts.findByPk(postId);
+      if (!postExist) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      if (postExist.is_Approved === false) {
+        return res.status(404).json({ error: "Post is not approved" });
+      }
+      if (postExist.featured === true) {
+        return res.status(404).json({ error: "Post is already featured" });
+      }
+      const oneDayInMilliseconds = 24 * 60 * 60 * 1000 * 14;
+      const currentDateTime = new Date();
+      const featuredExpiryDate = new Date(
+        currentDateTime.getTime() + oneDayInMilliseconds
+      );
+      postExist.featured = true;
+      postExist.featuredExpiry = featuredExpiryDate;
+      await postExist.save();
+      return res.json({ postExist, message: "Post featured successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "An error occurred while featuring a post." });
+  }
+});
+
+// Delete post by ID
+router.delete("/deletepost-by-user/:id", checkUserAuthentication, async (req, res) => {
+  try {
+    const user = req.user;
+    if (user) {
+    const postId = req.params.id;
+    const post = await Posts.findByPk(postId);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+    await post.destroy();
+    return res.status(200).json({ message: "Post removed successfully." });}
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Get posts with pagination
+router.get("/postsWithPagination", async (req, res) => {
+  try {
+    let { type,  page = 1, pageSize = 10, search } = req.query;
+    pageSize = parseInt(pageSize, 10);
+    const offset = (page - 1) * pageSize;
+    const whereClause = {
+      [Op.or]: [{ title: { [Op.like]: `%${search}%` } }],
+    };
+    const filters = {};
+
+    if (type) {
+      filters.type = type;
+    }
+    filters.is_Approved = true;
+    const { count, rows: posts } = await Posts.findAndCountAll({
+      where:  { ...filters, ...whereClause },
+      include: [
+        { model: Images, as: "images" },
+        { model: Brand, as: "brand" },
+        { model: Size, as: "size", attributes: ["name"] },
+        { model: Colors, as: "colors", attributes: ["id", "name"] },
+        { model: Material, as: "material", attributes: ["id", "name"] },
+        { model: Category, as: "category" },
+        { model: Subcategory, as: "subcategory" },
+        { model: NestedSubcategory, as: "nestedsubcategory" },
+        { model: SubNestedSubcategory, as: "subnestedsubcategory" },
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "username", "profileImage"],
+        },
+      ],
+      offset,
+      limit: pageSize,
+    });
+    const postsWithS3Urls = posts.map((post) => {
+      const postJson = post.toJSON();
+      const colors =
+        postJson.colors.map((color) => ({
+          id: color.id,
+          name: color.name,
+        })) || [];
+      const materials =
+        postJson.material.map((material) => ({
+          id: material.id,
+          name: material.name,
+        })) || [];
+      return {
+        ...postJson,
+        brandName: postJson.brand?.name || null,
+        categoryName: postJson.category?.name || null,
+        subcategoryName: postJson.subcategory?.name || null,
+        nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+        subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
+        brand: undefined,
+        colors: colors,
+        material: materials,
+        category: undefined,
+        subcategory: undefined,
+        nestedsubcategory: undefined,
+        subnestedsubcategory: undefined,
+      };
+    });
+    res.json({   
+      total: count,
+      page,
+      pageSize,
+      postsWithS3Urls});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Get all posts of user for admin
+router.get("/getUserPostsById/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const filters = {};
+    filters.userId = userId;
+    const posts = await Posts.findAll({
+      where: filters,
+      include: [
+        { model: Images, as: "images" },
+        { model: Brand, as: "brand" },
+        { model: Size, as: "size", attributes: ["name"] },
+        { model: Colors, as: "colors", attributes: ["id", "name"] },
+        { model: Material, as: "material", attributes: ["id", "name"] },
+        { model: Category, as: "category" },
+        { model: Subcategory, as: "subcategory" },
+        { model: NestedSubcategory, as: "nestedsubcategory" },
+        { model: SubNestedSubcategory, as: "subnestedsubcategory" },
+        // {
+        //   model: User,
+        //   as: "user",
+        //   attributes: ["id", "username", "profileImage"],
+        // },
+      ],
+    });
+
+    const postsWithS3Urls = posts.map((post) => {
+      const postJson = post.toJSON();
+      const colors =
+        postJson.colors.map((color) => ({
+          id: color.id,
+          name: color.name,
+        })) || [];
+      const materials =
+        postJson.material.map((material) => ({
+          id: material.id,
+          name: material.name,
+        })) || [];
+      return {
+        ...postJson,
+        brandName: postJson.brand?.name || null,
+        categoryName: postJson.category?.name || null,
+        subcategoryName: postJson.subcategory?.name || null,
+        nestedsubcategoryName: postJson.nestedsubcategory?.name || null,
+        subnestedsubcategoryName: postJson.subnestedsubcategory?.name || null,
+        brand: undefined,
+        colors: colors,
+        material: materials,
+        category: undefined,
+        subcategory: undefined,
+        nestedsubcategory: undefined,
+        subnestedsubcategory: undefined,
+      };
+    });
+
+    res.json(postsWithS3Urls);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
   }
 });
 

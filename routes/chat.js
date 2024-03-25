@@ -54,6 +54,7 @@ router.post('/sendMessage', async (req, res) => {
         receiverId,
         timestamp: new Date(),
       },
+      isDeleted: false,
     };
 
     if (!roomSnapshot.exists()) {
@@ -82,6 +83,7 @@ router.post('/sendMessage', async (req, res) => {
       // Update the last_message field
       await updateDoc(roomRef, {
         last_message: roomData.last_message,
+        isDeleted: false
       });
     }
 
@@ -159,6 +161,21 @@ router.post('/upload-image', upload.single("chatImage"), async (req, res) => {
       .json({ chatImage: chatImage});
   } catch (error) {
     res.status(500).send('Error uploading image');
+  }
+});
+
+// Delete Chat by room id
+router.delete('/delete-chat/:roomId', async (req, res) => {
+  const roomId = req.params.roomId;
+  try {
+    const roomRef = doc(firestore, 'rooms', roomId);
+      await updateDoc(roomRef, {
+        isDeleted: true,
+      });
+    res.status(200).send('Chat Deleted successfully');
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    res.status(500).send('Error deleting message');
   }
 });
 

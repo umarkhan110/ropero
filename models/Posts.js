@@ -46,7 +46,11 @@ const Posts = sequelize.define("Posts", {
   },
   price: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
+  },
+  askToSeller: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   },
   discount_price: {
     type: DataTypes.INTEGER,
@@ -274,3 +278,9 @@ export default Posts;
 //   FOREIGN KEY (`subnestedsubcategoryId`)
 //   REFERENCES `ropero`.`SubNestedSubcategories` (`id`)
 //   ON UPDATE CASCADE;
+
+
+
+ALTER TABLE `ropero`.`Posts` 
+ADD COLUMN `askToSeller` TINYINT NULL DEFAULT 0 AFTER `address`,
+CHANGE COLUMN `price` `price` INT NULL ;
