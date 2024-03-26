@@ -15,6 +15,8 @@ import Material from "../models/Material.js";
 import { Op, Sequelize } from "sequelize";
 import User from "../models/User.js";
 import checkUserAuthentication from "../middleware/authMiddleware.js";
+import giffUpload from "../factory/giffUpload.js";
+import Ads from "../models/Ads.js";
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
@@ -843,9 +845,9 @@ router.get("/users-posts", checkUserAuthentication, async (req, res) => {
 });
 
 // Get all featured posts
-router.get("/featured-posts", checkUserAuthentication, async (req, res) => {
+router.get("/featured-posts", async (req, res) => {
   try {
-    const userId = req.user.id;
+    // const userId = req.user.id;
     const filters = {};
     // filters.is_Approved = true;
     // filters.userId = userId;
@@ -970,15 +972,22 @@ router.get("/reserved-posts", checkUserAuthentication, async (req, res) => {
   }
 });
 
-// Delete post by ID
+// Delete post by admin
 router.delete("/deletepost/:id", async (req, res) => {
   try {
+    const userId = req.body.userId;
+    const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
     const postId = req.params.id;
     const post = await Posts.findByPk(postId);
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
     }
     await post.destroy();
+    userRes.no_of_posts = userRes.no_of_posts - 1;
+    await userRes.save();
     return res.status(200).json({ message: "Post removed successfully." });
   } catch (error) {
     console.error(error);
@@ -1335,6 +1344,8 @@ router.delete("/deletepost-by-user/:id", checkUserAuthentication, async (req, re
       return res.status(404).json({ error: "Post not found" });
     }
     await post.destroy();
+    user.no_of_posts = user.no_of_posts - 1;
+    await user.save();
     return res.status(200).json({ message: "Post removed successfully." });}
   } catch (error) {
     console.error(error);

@@ -59,6 +59,7 @@ import Ticket from './models/Ticket.js';
 import Coupon from './models/Coupon.js';
 import Posts from './models/Posts.js';
 import Wishlist from './models/Whislist.js';
+import ads from "./routes/ads.js"
 
 app.use('/auth', authRoutes);
 app.use('/cate', categoriesRoutes);
@@ -76,6 +77,7 @@ app.use('/dashboard', dashboardRoutes)
 app.use('/reserve-post', reservedRoutes)
 app.use('/tickets', ticketRouter)
 app.use('/coupons', couponRouter)
+app.use('/ads', ads)
 
 Category.hasMany(Subcategory, {
   foreignKey: 'categoryId',

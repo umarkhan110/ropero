@@ -447,15 +447,11 @@ router.post("/reset-password", async (req, res) => {
 router.get("/get-all-user", async (req, res) => {
   try {
     let { page = 1, pageSize = 10, search } = req.query;
-    // Ensure that pageSize is a numeric value
     pageSize = parseInt(pageSize, 10);
     const offset = (page - 1) * pageSize;
     const whereClause = {
-      // Add search functionality
       [Op.or]: [
-        // Customize this list to include relevant fields you want to search in
         { username: { [Op.like]: `%${search}%` } },
-        // Add more fields as needed
       ],
     };
     const users = await User.findAndCountAll({
@@ -473,6 +469,7 @@ router.get("/get-all-user", async (req, res) => {
       ],
       offset,
       limit: pageSize,
+      order: [['id', 'DESC']]
     });
     res.json({
       total: users.count,

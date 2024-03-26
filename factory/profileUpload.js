@@ -13,14 +13,13 @@ AWS.config.update({
     const params = {
       Bucket: "ropero",
       Key: fileName,
-      Body: imageData, // The binary data of the image
+      Body: imageData,
       ACL: "public-read",
-      ContentType: "image/jpeg", // Set the appropriate content type
+      ContentType: "image/jpeg",
     };
   
     try {
       const response = await s3.putObject(params).promise();
-      // Construct the S3 image URL using the bucket name and file name
     const s3ImageUrl = `https://ropero.s3.sa-east-1.amazonaws.com/${fileName}`;
     
     return s3ImageUrl;
