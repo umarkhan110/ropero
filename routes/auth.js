@@ -326,7 +326,7 @@ router.post("/login", async (req, res) => {
           id: user.id,
           username: user.username,
           profileImage: user.profileImage,
-          fcm_token: fcm_token,
+          fcm_token: user.fcm_token,
           address: user.address,
           city: user.city,
           state: user.state,
@@ -465,7 +465,8 @@ router.get("/get-all-user", async (req, res) => {
         "isVerified",
         "is_disabled",
         "no_of_posts",
-        "cnic"
+        "cnic",
+        "fcm_token"
       ],
       offset,
       limit: pageSize,

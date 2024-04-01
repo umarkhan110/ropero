@@ -64,7 +64,7 @@ router.post("/send-notification", checkUserAuthentication, async (req, res) => {
       })
       .catch((error) => {
         console.error("Error sending message:", error);
-        return res.status(500).json({ error: "Failed to send notification" });
+        return res.status(500).json({ error: error });
       });
   } catch (err) {
     console.error("error2", err);
@@ -169,6 +169,45 @@ router.post("/sendNotificationToAllUser", async (req, res) => {
   } catch (error) {
     console.error("Error:", error);
     return res.status(500).json({ error: error });
+  }
+});
+
+
+router.post("/sendFCM", async (req, res) => {
+  try {
+    const { fcm } = req.body;
+    const pushMessage = {
+      notification: {
+        title: fcm,
+        body: fcm,
+      },
+      data: {
+        notificationId: "",
+        status: "unread",
+        sender_id: "admin",
+        sender_name: "admin",
+        sender_image: "admin",
+      },
+      token: fcm,
+    };
+
+    admin
+      .messaging()
+      .send(pushMessage)
+      .then((response) => {
+        console.log("Successfully sent message:", response);
+        return res
+          .status(200)
+          .json({ success: true, message: "Notification sent successfully" });
+      })
+      .catch((error) => {
+        console.error("Error sending message:", error);
+        return res.status(500).json({ error: "Failed to send notification" });
+      });
+    
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error });
   }
 });
 
