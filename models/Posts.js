@@ -158,6 +158,14 @@ const Posts = sequelize.define("Posts", {
     allowNull: false,
     defaultValue: false,
   },
+  soldOut: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
+  soldOutStartTime: {
+    type: DataTypes.DATE,
+  },
 });
 
 Posts.hasMany(Images, { foreignKey: "postId", as: "images" });
@@ -284,3 +292,8 @@ export default Posts;
 // ALTER TABLE `ropero`.`Posts` 
 // ADD COLUMN `askToSeller` TINYINT NULL DEFAULT 0 AFTER `address`,
 // CHANGE COLUMN `price` `price` INT NULL ;
+
+
+// ALTER TABLE `ropero`.`Posts` 
+// ADD COLUMN `soldOut` TINYINT NOT NULL DEFAULT 0 AFTER `askToSeller`,
+// ADD COLUMN `soldOutStartTime` VARCHAR(45) NULL AFTER `soldOut`;

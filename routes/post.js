@@ -1490,4 +1490,37 @@ router.get("/getUserPostsById/:id", async (req, res) => {
   }
 });
 
+// SoldOut Post by Id
+router.put("/soldOutPost/:id",checkUserAuthentication, async (req, res) => {
+  try {
+    const user = req.user;
+    if (user) {
+      const postId = req.params.id;
+      const postExist = await Posts.findByPk(postId);
+
+      if (!postExist) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      
+      if (postExist.soldOut === true) {
+        return res.status(404).json({ error: "Post is already sold" });
+      }
+      
+      const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
+      const currentDateTime = new Date();
+      const soldOutTime = new Date(
+        currentDateTime.getTime() + oneDayInMilliseconds
+      );
+      postExist.soldOut = true;
+      postExist.soldOutStartTime = soldOutTime;
+
+      await postExist.save();
+      return res.json({ postExist, message: "Post sold out successfully" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error });
+  }
+});
+
 export default router;
