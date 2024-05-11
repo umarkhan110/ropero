@@ -27,7 +27,7 @@ router.post(
   upload.array("images", 10),
   async (req, res) => {
     try {
-      if (req.user.no_of_posts > 5) {
+      if (req.user.free_posts > 5) {
         if (req.user.credits > 1) {
           const images = req.files.map((file, index) => {
             return {
@@ -219,6 +219,7 @@ router.post(
 
         const user = req.user;
         user.no_of_posts = user.no_of_posts + 1;
+        user.free_posts = user.free_posts + 1;
         await user.save();
         res.status(201).json({post, credit:user.credits});
       }
@@ -423,7 +424,7 @@ router.get("/get-all-post-by-admin", async (req, res) => {
         { model: Subcategory, as: "subcategory" },
         { model: NestedSubcategory, as: "nestedsubcategory" },
         { model: SubNestedSubcategory, as: "subnestedsubcategory" },
-        { model: User, as: "user", attributes: ["id", "username", "email"] },
+        { model: User, as: "user" },
       ],
       offset,
       limit: pageSize,
@@ -986,8 +987,8 @@ router.delete("/deletepost/:id", async (req, res) => {
       return res.status(404).json({ error: "Post not found" });
     }
     await post.destroy();
-    userRes.no_of_posts = userRes.no_of_posts - 1;
-    await userRes.save();
+    user.no_of_posts = user.no_of_posts - 1;
+    await user.save();
     return res.status(200).json({ message: "Post removed successfully." });
   } catch (error) {
     console.error(error);

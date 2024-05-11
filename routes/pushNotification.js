@@ -141,7 +141,7 @@ router.post("/sendNotificationToAllUser", async (req, res) => {
     };
     const arrayOfId = [];
     const users = await User.findAll({
-      attributes: ["fcm_token"],
+      attributes: ["fcm_token", "id"],
     });
     users.forEach((user) => {
       if (user.fcm_token) {
@@ -165,6 +165,20 @@ router.post("/sendNotificationToAllUser", async (req, res) => {
         );
       }
     });
+      // Create notification records for each user
+      const sender = { id: "admin", username: "admin", profileImage: "admin" };
+      await Promise.all(users.map(async user => {
+        console.log(user.id)
+        await Notifications.create({
+          sender_id: 999999999999999,
+          sender_name: sender.username,
+          sender_image: sender.profileImage,
+          reciver_id: user.id,
+          title: title,
+          message: message,
+          status: "unread",
+        });
+      }));
     return res.status(200).json({ message: "Notification sent successfully." });
   } catch (error) {
     console.error("Error:", error);

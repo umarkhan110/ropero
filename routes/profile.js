@@ -4,6 +4,8 @@ const router = express.Router();
 import sgMail from "@sendgrid/mail";
 import "dotenv/config";
 import twilio from "twilio";
+import jwt from "jsonwebtoken";
+import axios from 'axios';
 import checkUserAuthentication from "../middleware/authMiddleware.js";
 sgMail.setApiKey(process.env.SG_MAIL);
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -85,7 +87,7 @@ router.get("/verifyToken/:token", checkUserAuthentication, async (req, res) => {
     if (!existingUserWithToken || existingUserWithToken.id !== user.id) {
       return res.status(409).json({ error: "Token is invalid" });
     }
-    user.isVerified = true;
+    user.isPhoneVerified = true;
     await user.save();
 
     res.json({ message: "Phone verification successful." });
@@ -94,5 +96,34 @@ router.get("/verifyToken/:token", checkUserAuthentication, async (req, res) => {
     res.status(500).json({ error: "An error occurred while verifying phone." });
   }
 });
+
+router.post(
+  "/appleLogin",
+  async (req, res) => {
+    const { appleToken } = req.body;
+    try {
+      const applePublicKeyUrl = 'https://appleid.apple.com/auth/keys';
+      const applePublicKeys = await axios(applePublicKeyUrl);
+      
+      const decodedToken = jwt.decode(appleToken, { complete: true });
+      console.log(appleToken)
+      const { kid, alg } = decodedToken.header;
+      const publicKey = applePublicKeys.data.keys.find(key => key.kid === kid);
+
+      const userInfo = jwt.verify(appleToken, publicKey, { algorithms: [alg] });
+      
+      // Extract user's email/name from the token payload
+      const email = userInfo.email;
+      const name = userInfo.name;
+
+      res.json({ message: "Verification token sent successfully.", data: {email, name} });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ error: "An error occurred while login." });
+    }
+  }
+);
 
 export default router;

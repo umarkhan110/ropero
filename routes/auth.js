@@ -11,6 +11,7 @@ import axios from "axios";
 import "dotenv/config";
 import jwt from "jsonwebtoken";
 import twilio from "twilio";
+import Posts from "../models/Posts.js";
 sgMail.setApiKey(process.env.SG_MAIL);
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -30,6 +31,7 @@ router.post("/socialLogin", async (req, res) => {
   const id_token = req.body.id_token;
   const provider = req.body.provider;
   const fcm_token = req.body.fcm_token;
+  const appleId = req.body.appleId;
   const TOKEN_EXPIRY_DAYS = 7;
   try {
     let usrRes, username, email, userData, profileImage;
@@ -59,12 +61,21 @@ router.post("/socialLogin", async (req, res) => {
       username = userData.name;
       email = userData.id;
       profileImage = userData.picture.data.url;
+    } else  if (provider === "apple") {
+      username = req.body.given_name + " " + req.body.family_name;
+      email = req.body.email;
     }
 
-    const user = await User.findOne({ where: { email: email } });
+    let user;
+    if(provider === "apple"){
+      user= await User.findOne({ where: { appleId: appleId } });
+    }else{
+      user= await User.findOne({ where: { email: email } });
+    }
     if (
       (user && user.provider === "google") ||
-      (user && user.provider === "facebook")
+      (user && user.provider === "facebook") || 
+      (user && user.provider === "apple")
     ) {
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
         expiresIn:  `${TOKEN_EXPIRY_DAYS}d`,
@@ -86,7 +97,8 @@ router.post("/socialLogin", async (req, res) => {
           state: "",
           city: "",
           address: "",
-          fcm_token:fcm_token
+          fcm_token:fcm_token,
+          appleId
         });
         const token = jwt.sign(
           { userId: userData.id },
@@ -456,18 +468,19 @@ router.get("/get-all-user", async (req, res) => {
     };
     const users = await User.findAndCountAll({
       where: whereClause,
-      attributes: [
-        "id",
-        "username",
-        "email",
-        "phone",
-        "profileImage",
-        "isVerified",
-        "is_disabled",
-        "no_of_posts",
-        "cnic",
-        "fcm_token"
-      ],
+      // attributes: [
+      //   "id",
+      //   "username",
+      //   "email",
+      //   "phone",
+      //   "profileImage",
+      //   "isVerified",
+      //   "isPhoneVerified",
+      //   "is_disabled",
+      //   "no_of_posts",
+      //   "cnic",
+      //   "fcm_token"
+      // ],
       offset,
       limit: pageSize,
       order: [['id', 'DESC']]
@@ -618,6 +631,7 @@ router.get("/user-detail/:id", async (req, res) => {
         credits: user.credits,
         no_of_posts: user.no_of_posts,
         isVerified: user.isVerified,
+        isPhoneVerified: user.isPhoneVerified,
         provider: user.provider,
         cnic: user.cnic
       },
@@ -637,7 +651,7 @@ router.delete("/delete-user/:id", async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
+    await Posts.destroy({ where: { userId: userId } });
     // Delete the user
     await user.destroy();
 
