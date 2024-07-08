@@ -20,6 +20,28 @@ import Ads from "../models/Ads.js";
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+// View All Cities
+router.get('/getAllCities', async (req, res) => {
+  try {
+    const cities = [
+      "Santa Cruz",
+"Cochabamba",
+"La Paz",
+"El Alto",
+"Tarija",
+"Chuquisaca",
+"Oruro",
+"Potosi",
+"Beni",
+"Pando"
+    ];
+    res.json(cities);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+);
 // Create a new post
 router.post(
   "/post",
@@ -1012,6 +1034,7 @@ router.get("/postsfilter", async (req, res) => {
       state,
       price,
       condition,
+      city
     } = req.query;
     const filters = {};
 
@@ -1054,6 +1077,11 @@ router.get("/postsfilter", async (req, res) => {
     if (condition) {
       filters.condition = condition;
     }
+
+    if (city) {
+      filters.city = city;
+    }
+
     filters.is_Approved = true;
     const includeArray = [
       { model: Images, as: "images" },
