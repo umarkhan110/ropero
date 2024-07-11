@@ -180,7 +180,7 @@ router.post("/register", upload.single("profileImage"), async (req, res) => {
         from: "elropero@elropero.app",
         subject: "Email Verification Code",
         text: "Haga clic en el siguiente link para verificar su correo electrónico",
-        html: `<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Email</a></strong>`,
+        html: `Haga clic en el siguiente link para verificar su correo electrónico  <strong><a href="https://www.elropero.app/loading?token=${token}">Verify Email</a></strong>`,
       };
       sgMail.send(msg);
       console.log(token);
@@ -268,7 +268,7 @@ router.post("/resend-verification", async (req, res) => {
         from: "elropero@elropero.app",
         subject: "Email Verification Code",
         text: "Haga clic en el siguiente link para verificar su correo electrónico",
-        html: `<strong><a href="https://www.elropero.app/loading?token=${token}">Verify Code</a></strong>`,
+        html: `Haga clic en el siguiente link para verificar su correo electrónico  <strong><a href="https://www.elropero.app/loading?token=${token}">Verify Code</a></strong>`,
       };
       sgMail.send(msg);
     } else if (phone) {
@@ -390,9 +390,9 @@ router.post("/reset-password-request", async (req, res) => {
       const msg = {
         to: emailOrPhone,
         from: "elropero@elropero.app",
-        subject: "Email Verification Code",
+        subject: "Password Reset Link",
         text: "Por favor, haz clic en el enlace para restablecer la contraseña",
-        html: `<strong><a href="https://www.elropero.app/reset-password?token=${resetToken}">Password Reset Code</a></strong>`,
+        html: `Hola! Esta email es para ayudarte a recuperar la pass word de tu cuenta. Sigue las indicaciones y si necesitas asistencia no dudes en contactarnos!  <br></br> Por favor, haz clic en el enlace para restablecer la contraseña <strong><a href="https://www.elropero.app/reset-password?token=${resetToken}">Código de restablecimiento de contraseña</a></strong> <br></br>  <br></br>  Hello! This email is to help you recover the password of your account. Follow the instructions and if you need assistance, do not hesitate to contact us!  <br></br> Please click the link to reset your password <strong><a href="https://www.elropero.app/reset-password?token=${resetToken}">Password Reset Code</a></strong>`,
       };
       sgMail.send(msg);
     } else if (phone) {
