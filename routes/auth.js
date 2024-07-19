@@ -44,6 +44,7 @@ router.post("/socialLogin", async (req, res) => {
           },
         }
       );
+      console.log(usrRes)
       userData = usrRes.data;
       username = userData.given_name + " " + userData.family_name;
       email = userData.email;

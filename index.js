@@ -62,11 +62,14 @@ import Wishlist from './models/Whislist.js';
 import ads from "./routes/ads.js";
 import profile from "./routes/profile.js";
 import banner from "./routes/banner.js";
+import salesRoutes from "./routes/salescounter.js";
+
 
 app.use('/auth', authRoutes);
 app.use('/cate', categoriesRoutes);
 app.use('/utils', utilsRoutes);
 app.use('/posts', postRoutes);
+app.use('/sales', salesRoutes);
 app.use('/whislist', wishlistRoutes);
 app.use('/follower', followerRoutes);
 app.use('/rating', ratingRoutes);

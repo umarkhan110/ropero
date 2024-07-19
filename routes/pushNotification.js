@@ -5,13 +5,17 @@ import User from "../models/User.js";
 
 const router = express.Router();
 // Import the JSON data with the correct import assertion
-import jsonData from "../el-ropero.json" assert { type: "json" };
+// import jsonData from "../el-ropero.json" assert { type: "json" };
 import checkUserAuthentication from "../middleware/authMiddleware.js";
 import Notifications from "../models/Notification.js";
-
+const params = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\@/g, "\n") : undefined,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+};
 // Initialize the Firebase Admin SDK with your credentials
 admin.initializeApp({
-  credential: admin.credential.cert(jsonData),
+  credential: admin.credential.cert(params),
   messagingSenderId: process.env.SERVER_KEY,
 });
 
